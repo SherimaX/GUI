@@ -13,7 +13,14 @@ import plotly.graph_objs as go
 from dash_extensions import EventSource
 import json
 
-app = dash.Dash(__name__)
+# Serve Dash assets locally so this demo works without Internet access. This
+# uses ``serve_locally=True`` for modern versions and falls back to the old
+# ``css.config``/``scripts.config`` flags if present.
+app = dash.Dash(__name__, serve_locally=True)
+if hasattr(app, "css") and hasattr(app.css, "config"):
+    app.css.config.serve_locally = True
+if hasattr(app, "scripts") and hasattr(app.scripts, "config"):
+    app.scripts.config.serve_locally = True
 
 app.layout = html.Div(
     [

@@ -20,17 +20,14 @@ import threading
 import time
 import collections
 from typing import Dict, Any, Deque, List
-from itertools import islice
 
 import yaml
 import socket
-import pandas as pd
-import os
-import csv
 import json
 from queue import Queue
 from flask import Response
 from dash_extensions import EventSource
+from data_handler import DataLogger, HEADER_FIELDS
 
 import dash
 from dash import dcc, html, Input, Output, State
@@ -42,7 +39,6 @@ HISTORY = 5000  # number of samples to keep for plotting (increased)
 UPDATE_MS = 100  # UI poll interval in milliseconds
 N_WINDOW_SEC = 10  # how many seconds of data to show in plots
 LOG_FILE = "data_log.csv"
-HEADER_FIELDS = ["time", "ankle_angle"] + [f"pressure_{i}" for i in range(1, 9)]
 
 # Shared state for plotting (producer: UDP listener, consumer: Dash callback)
 plot_lock = threading.Lock()
@@ -81,7 +77,9 @@ def send_control_packet(cfg: Dict[str, Any], zero: float, motor: float = 0.0, as
 # Background UDP listener (fills a deque with decoded packets)
 # --------------------------------------------------------------------------------------
 
-def start_udp_listener(cfg: Dict[str, Any], buffer: Deque[Dict[str, float]]) -> None:
+def start_udp_listener(
+    cfg: Dict[str, Any], buffer: Deque[Dict[str, float]], logger: DataLogger
+) -> None:
     fmt = cfg["packet"]["format"]
     expected = struct.calcsize(fmt)
     mapping = cfg["signals"]
@@ -101,10 +99,7 @@ def start_udp_listener(cfg: Dict[str, Any], buffer: Deque[Dict[str, float]]) -> 
     packets_rcvd = 0               # counter
     print(f"Listening for data on {cfg['udp']['listen_host']}:{cfg['udp']['listen_port']}")
 
-    # Log file is assumed to exist with header (created at startup)
-
-    csv_buffer: collections.deque[str] = collections.deque(maxlen=1000)  # keep last 1000 rows
-    last_flush_wall: float = time.time()
+    # Data logging helpers
     last_saved_sim: float | None = None  # for 0.01s sim-time throttling
 
     # debug helper
@@ -134,23 +129,12 @@ def start_udp_listener(cfg: Dict[str, Any], buffer: Deque[Dict[str, float]]) -> 
                 plot_state["pressures"][i].append(decoded.get(f"pressure_{i}", 0.0))
 
         # Append to CSV every 0.01 s of simulation time
-        if sim_t is not None and (last_saved_sim is None or (sim_t - last_saved_sim) >= 0.01):
+        if sim_t is not None and (
+            last_saved_sim is None or (sim_t - last_saved_sim) >= 0.01
+        ):
             last_saved_sim = sim_t
-            row_vals = [
-                f"{sim_t:.4f}",
-                f"{ankle:.4f}",
-            ] + [
-                f"{decoded.get(f'pressure_{i}', 0.0):.1f}" for i in range(1, 9)
-            ]
-            csv_buffer.append(",".join(row_vals))
-
-            # Flush CSV to disk at most once per second to reduce I/O
-            now_wall = time.time()
-            if now_wall - last_flush_wall >= 1.0:
-                last_flush_wall = now_wall
-                with open(LOG_FILE, "w", encoding="utf-8") as f:
-                    f.write(",".join(HEADER_FIELDS) + "\n")
-                    f.write("\n".join(csv_buffer))
+            pressures = [decoded.get(f"pressure_{i}", 0.0) for i in range(1, 9)]
+            logger.log(sim_t, ankle, pressures)
 
         # ------------------------------------------------------------------
         # Push latest sample to SSE queue (non-blocking)
@@ -229,10 +213,8 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         Input("es", "message"),
         prevent_initial_call=True,
     )
-    def push_sample(msg):
-        """Handle EventSource messages that can be either a raw JSON string
-        or a dict with a "data" key containing that string (depending on
-        dash-extensions version)."""
+    def push_batch(msg):
+        """Handle SSE messages that contain batched samples."""
 
         if msg is None:
             raise dash.exceptions.PreventUpdate
@@ -254,18 +236,32 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
             print(f"Failed to decode JSON from SSE: {json_str[:100]}")
             raise dash.exceptions.PreventUpdate
 
-        t = payload.get("t")
-        ankle = payload.get("ankle")
-        press = payload.get("press", [])
+        times = payload.get("t", [])
+        ankles = payload.get("ankle", [])
+        pressures = payload.get("press", [])
 
-        # Debug: show first few samples to confirm flow
+        if not isinstance(times, list):
+            times = [times]
+        if not isinstance(ankles, list):
+            ankles = [ankles]
+        if pressures and isinstance(pressures[0], (int, float)):
+            pressures = [pressures]
+
         if len(plot_state["times"]) < 5:
-            print(f"push_sample first payload → t={t} ankle={ankle}")
+            print(f"push_batch first payload → count={len(times)}")
 
-        ankle_payload = dict(x=[[t]], y=[[ankle]], traceIndices=[0], maxPoints=1000)
+        ankle_payload = dict(
+            x=[times],
+            y=[ankles],
+            traceIndices=[0],
+            maxPoints=1000,
+        )
+
+        # transpose pressures -> 8 traces
+        transposed = list(zip(*pressures)) if pressures else [[] for _ in range(8)]
         press_payload = dict(
-            x=[[t] for _ in range(8)],
-            y=[[v] for v in press],
+            x=[times for _ in range(8)],
+            y=[list(tr) for tr in transposed],
             traceIndices=list(range(8)),
             maxPoints=1000,
         )
@@ -277,10 +273,23 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
     @app.server.route("/events")
     def sse_stream():  # type: ignore
         print("[SSE] Client connected.")
+
         def generate():
+            batch: List[Dict[str, float]] = []
             while True:
-                data = event_q.get()
-                yield f"data:{json.dumps(data)}\n\n"
+                item = event_q.get()
+                batch.append(item)
+                # pull everything that's waiting to minimise messages
+                while not event_q.empty() and len(batch) < 50:
+                    batch.append(event_q.get())
+
+                payload = {
+                    "t": [s["t"] for s in batch],
+                    "ankle": [s["ankle"] for s in batch],
+                    "press": [s["press"] for s in batch],
+                }
+                batch.clear()
+                yield f"data:{json.dumps(payload)}\n\n"
 
         return Response(generate(), mimetype="text/event-stream")
 
@@ -294,15 +303,19 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
 if __name__ == "__main__":
     cfg = load_config()
 
-    # Recreate log file with header on each run
-    with open(LOG_FILE, "w", encoding="utf-8") as f:
-        f.write(",".join(HEADER_FIELDS) + "\n")
-
+    logger = DataLogger(LOG_FILE)
     data_queue: Deque[Dict[str, float]] = collections.deque(maxlen=HISTORY)
 
     # Spin up the listener in a daemon thread
-    listener_t = threading.Thread(target=start_udp_listener, args=(cfg, data_queue), daemon=True)
+    listener_t = threading.Thread(
+        target=start_udp_listener,
+        args=(cfg, data_queue, logger),
+        daemon=True,
+    )
     listener_t.start()
 
-    dash_app = build_dash_app(cfg, data_queue)
-    dash_app.run(host="192.168.7.15", port=8050, debug=True, use_reloader=False)
+    try:
+        dash_app = build_dash_app(cfg, data_queue)
+        dash_app.run(host="192.168.7.15", port=8050, debug=True, use_reloader=False)
+    finally:
+        logger.stop()

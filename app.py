@@ -383,6 +383,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
 
         def generate():
             try:
+                global _active_clients
                 # Drop all but the newest 1000 samples so the client isn't flooded
                 while event_q.qsize() > 1000:
                     try:

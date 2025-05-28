@@ -21,6 +21,12 @@ app = Flask(__name__)
 @app.route("/events")
 def sse():  # type: ignore
     def generate():
+        # Drop stale samples so new clients only receive the most recent ones
+        while EVENT_Q.qsize() > 1000:
+            try:
+                EVENT_Q.get_nowait()
+            except Exception:
+                break
         while True:
             data = EVENT_Q.get()
             yield f"data:{json.dumps(data)}\n\n"

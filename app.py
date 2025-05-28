@@ -371,6 +371,12 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         print("[SSE] Client connected.")
 
         def generate():
+            # Drop all but the newest 1000 samples so the client isn't flooded
+            while event_q.qsize() > 1000:
+                try:
+                    event_q.get_nowait()
+                except Exception:
+                    break
             batch: List[Dict[str, float]] = []
             while True:
                 item = event_q.get()

@@ -37,7 +37,12 @@ def load_csv(path: str = LOG_FILE) -> pd.DataFrame:
 # Dash App
 # -----------------------------------------------------------------------------
 
-app = dash.Dash(__name__)
+# Serve assets locally so the offline viewer does not depend on the network.
+app = dash.Dash(__name__, serve_locally=True)
+if hasattr(app, "css") and hasattr(app.css, "config"):
+    app.css.config.serve_locally = True
+if hasattr(app, "scripts") and hasattr(app.scripts, "config"):
+    app.scripts.config.serve_locally = True
 
 app.layout = html.Div(
     [

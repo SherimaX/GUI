@@ -172,7 +172,16 @@ def start_udp_listener(
 
 
 def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> dash.Dash:
-    app = dash.Dash(__name__)
+    """Create and configure the Dash application."""
+    # Serve JS/CSS assets locally so the dashboard works without Internet
+    # access. ``serve_locally`` is available on newer Dash versions but we
+    # also fall back to the older ``css.config``/``scripts.config`` flags
+    # for backwards compatibility.
+    app = dash.Dash(__name__, serve_locally=True)
+    if hasattr(app, "css") and hasattr(app.css, "config"):
+        app.css.config.serve_locally = True
+    if hasattr(app, "scripts") and hasattr(app.scripts, "config"):
+        app.scripts.config.serve_locally = True
 
     app.layout = html.Div(
         className="dashboard",

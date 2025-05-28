@@ -51,6 +51,11 @@ plot_state: Dict[str, Any] = {
 # Queue for server-sent events (SSE) to push fresh samples to the browser
 event_q: Queue = Queue(maxsize=10000)
 
+# Limit concurrent SSE clients
+MAX_CLIENTS = 5
+_active_clients = 0
+_client_lock = threading.Lock()
+
 # --------------------------------------------------------------------------------------
 # Config & helpers
 # --------------------------------------------------------------------------------------
@@ -368,30 +373,41 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
     # ------------------------------------------------------------------
     @app.server.route("/events")
     def sse_stream():  # type: ignore
-        print("[SSE] Client connected.")
+        global _active_clients
+
+        with _client_lock:
+            if _active_clients >= MAX_CLIENTS:
+                return Response("Too many clients", status=503)
+            _active_clients += 1
+        print(f"[SSE] Client connected. total={_active_clients}")
 
         def generate():
-            # Drop all but the newest 1000 samples so the client isn't flooded
-            while event_q.qsize() > 1000:
-                try:
-                    event_q.get_nowait()
-                except Exception:
-                    break
-            batch: List[Dict[str, float]] = []
-            while True:
-                item = event_q.get()
-                batch.append(item)
-                # pull everything that's waiting to minimise messages
-                while not event_q.empty() and len(batch) < 50:
-                    batch.append(event_q.get())
+            try:
+                # Drop all but the newest 1000 samples so the client isn't flooded
+                while event_q.qsize() > 1000:
+                    try:
+                        event_q.get_nowait()
+                    except Exception:
+                        break
+                batch: List[Dict[str, float]] = []
+                while True:
+                    item = event_q.get()
+                    batch.append(item)
+                    # pull everything that's waiting to minimise messages
+                    while not event_q.empty() and len(batch) < 50:
+                        batch.append(event_q.get())
 
-                payload = {
-                    "t": [s["t"] for s in batch],
-                    "ankle": [s["ankle"] for s in batch],
-                    "press": [s["press"] for s in batch],
-                }
-                batch.clear()
-                yield f"data:{json.dumps(payload)}\n\n"
+                    payload = {
+                        "t": [s["t"] for s in batch],
+                        "ankle": [s["ankle"] for s in batch],
+                        "press": [s["press"] for s in batch],
+                    }
+                    batch.clear()
+                    yield f"data:{json.dumps(payload)}\n\n"
+            finally:
+                with _client_lock:
+                    _active_clients -= 1
+                print(f"[SSE] Client disconnected. total={_active_clients}")
 
         return Response(generate(), mimetype="text/event-stream")
 
@@ -418,6 +434,12 @@ if __name__ == "__main__":
 
     try:
         dash_app = build_dash_app(cfg, data_queue)
-        dash_app.run(host="192.168.7.15", port=8050, debug=True, use_reloader=False)
+        dash_app.run(
+            host="192.168.7.15",
+            port=8050,
+            debug=True,
+            use_reloader=False,
+            threaded=True,
+        )
     finally:
         logger.stop()

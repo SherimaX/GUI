@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Dash web dashboard for Simulink UDP stream.
 
-Features implemented in this first cut:
-1. Toggle *zero_signal* between 0↔1 via a button. Sends a 4-float control packet.
+Features implemented:
+1. Toggle four control signals via buttons, sending a 4‑float packet.
 2. Live chart of `ankle_angle` (y-range −60…+60 deg).
 3. Live chart of the 8 plantar pressure signals (shared axis 0…1000 N).
 
@@ -170,69 +170,132 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
     app = dash.Dash(__name__)
 
     app.layout = html.Div(
-        [
+        className="dashboard",
+        children=[
             html.H2("Simulink UDP Dashboard"),
             html.Div(
-                [
-                    html.Button(
-                        "Toggle zero_signal (0)",
-                        id="zero-btn",
-                        n_clicks=0,
-                        style={"width": "220px"},
-                    ),
-                    dcc.Store(id="zero-state", data=0),
-                ]
+                className="controls",
+                children=[
+                    html.Button("zero (0)", id="zero-btn", n_clicks=0),
+                    html.Button("motor (0)", id="motor-btn", n_clicks=0),
+                    html.Button("assist (0)", id="assist-btn", n_clicks=0),
+                    html.Button("k (0)", id="k-btn", n_clicks=0),
+                ],
             ),
+            dcc.Store(id="zero-state", data=0),
+            dcc.Store(id="motor-state", data=0),
+            dcc.Store(id="assist-state", data=0),
+            dcc.Store(id="k-state", data=0),
             EventSource(id="es", url="/events"),
             html.Hr(),
-            dcc.Graph(
-                id="ankle",
-                figure=go.Figure(
-                    data=[go.Scatter(x=[], y=[], mode="lines", name="ankle_angle")],
-                    layout=dict(yaxis=dict(range=[-60, 60]), title="Ankle Angle (deg)"),
-                ),
-            ),
-            dcc.Graph(
-                id="press",
-                figure=go.Figure(
-                    data=[
-                        go.Scatter(x=[], y=[], mode="lines", name=f"pressure_{i}")
-                        for i in range(1, 9)
-                    ],
-                    layout=dict(
-                        yaxis=dict(range=[0, 1000]),
-                        title="Pressure",
-                        legend=dict(
-                            orientation="h",
-                            yanchor="bottom",
-                            y=1.02,
-                            xanchor="left",
-                            x=0,
+            html.Div(
+                className="plots",
+                children=[
+                    dcc.Graph(
+                        id="ankle",
+                        figure=go.Figure(
+                            data=[
+                                go.Scatter(x=[], y=[], mode="lines", name="ankle_angle")
+                            ],
+                            layout=dict(
+                                yaxis=dict(range=[-60, 60]),
+                                title="Ankle Angle (deg)",
+                            ),
                         ),
-                        margin=dict(t=60),
+                        config={"displayModeBar": False, "staticPlot": True},
                     ),
-                ),
+                    dcc.Graph(
+                        id="press",
+                        figure=go.Figure(
+                            data=[
+                                go.Scatter(x=[], y=[], mode="lines", name=f"pressure_{i}")
+                                for i in range(1, 9)
+                            ],
+                            layout=dict(
+                                yaxis=dict(range=[0, 1000]),
+                                title="Pressure",
+                                legend=dict(
+                                    orientation="h",
+                                    yanchor="bottom",
+                                    y=1.02,
+                                    xanchor="left",
+                                    x=0,
+                                ),
+                                margin=dict(t=60),
+                            ),
+                        ),
+                        config={"displayModeBar": False, "staticPlot": True},
+                    ),
+                ],
             ),
-        ]
+        ],
     )
 
     # ------------------------------------------------------------------
-    # Callback: Toggle zero_signal & send packet
+    # Callback: Toggle control signals & send packet
     # ------------------------------------------------------------------
     @app.callback(
         Output("zero-btn", "children"),
+        Output("motor-btn", "children"),
+        Output("assist-btn", "children"),
+        Output("k-btn", "children"),
         Output("zero-state", "data"),
+        Output("motor-state", "data"),
+        Output("assist-state", "data"),
+        Output("k-state", "data"),
         Input("zero-btn", "n_clicks"),
+        Input("motor-btn", "n_clicks"),
+        Input("assist-btn", "n_clicks"),
+        Input("k-btn", "n_clicks"),
         State("zero-state", "data"),
+        State("motor-state", "data"),
+        State("assist-state", "data"),
+        State("k-state", "data"),
         prevent_initial_call=True,
     )
-    def toggle_zero(
-        n_clicks: int, current_state: int
-    ):  # pylint: disable=unused-argument
-        next_state = 1 - (current_state or 0)
-        send_control_packet(cfg, zero=next_state)
-        label = f"Toggle zero_signal ({next_state})"
-        return label, next_state
+    def toggle_signals(
+        n_zero: int,
+        n_motor: int,
+        n_assist: int,
+        n_k: int,
+        zero_state: int,
+        motor_state: int,
+        assist_state: int,
+        k_state: int,
+    ) -> tuple[str, str, str, str, int, int, int, int]:
+        ctx = dash.callback_context
+        if not ctx.triggered:
+            raise dash.exceptions.PreventUpdate
+        triggered = ctx.triggered[0]["prop_id"].split(".")[0]
+
+        zero_state = zero_state or 0
+        motor_state = motor_state or 0
+        assist_state = assist_state or 0
+        k_state = k_state or 0
+
+        if triggered == "zero-btn":
+            zero_state = 1 - zero_state
+        elif triggered == "motor-btn":
+            motor_state = 1 - motor_state
+        elif triggered == "assist-btn":
+            assist_state = 1 - assist_state
+        elif triggered == "k-btn":
+            k_state = 1 - k_state
+        else:
+            raise dash.exceptions.PreventUpdate
+
+        send_control_packet(cfg, zero_state, motor_state, assist_state, k_state)
+
+        return (
+            f"zero ({zero_state})",
+            f"motor ({motor_state})",
+            f"assist ({assist_state})",
+            f"k ({k_state})",
+            zero_state,
+            motor_state,
+            assist_state,
+            k_state,
+        )
 
     # ------------------------------------------------------------------
     # Callback: Update graphs on *each* SSE message (near real-time)

@@ -1,0 +1,55 @@
+# UDP connection parameters
+udp:
+  # IP address to bind the UDP listener ("0.0.0.0" means all interfaces)
+  listen_host: "0.0.0.0"
+  listen_port: 5432  # incoming data from Simulink
+
+  # Where to send outbound control packets (Simulink UDP Receive block)
+  send_host: "192.168.7.5"
+  send_port: 5432
+
+# Packet definition
+packet:
+  # struct-format string describing the binary layout of a single UDP datagram.
+  # Below: 28 little-endian 32-bit floats (28 × 4 bytes = 112 bytes). Change to "<d" if you use doubles.
+  format: "<28f"
+
+  # Total number of signals contained in one packet (redundant but explicit).
+  size: 28
+
+# Mapping from human-friendly signal names to their 0-based position in the packet.
+# Extend or modify as your Simulink model evolves.
+signals:
+  time: 0
+  treadmill_velocity: 1
+  ankle_angle: 2
+
+  # Plantar pressure sensors (insole), left-aligned indices 3-10
+  pressure_1: 3
+  pressure_2: 4
+  pressure_3: 5
+  pressure_4: 6
+  pressure_5: 7
+  pressure_6: 8
+  pressure_7: 9
+  pressure_8: 10
+
+  # IMU channels
+  imu_1: 11
+  imu_2: 12
+  imu_3: 13
+  imu_4: 14
+  imu_5: 15
+  imu_6: 16
+  imu_7: 17
+  imu_8: 18
+  imu_9: 19
+  imu_10: 20
+
+  gait_percentage: 21
+  shifted_angle_moment: 22
+  actual_torque: 23
+  heel_strike: 24
+  assistance_level: 25
+  estimated_ankle_moment: 26
+  empty: 27 

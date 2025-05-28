@@ -27,7 +27,7 @@ import json
 from queue import Queue
 from flask import Response
 from dash_extensions import EventSource
-from data_handler import DataLogger, HEADER_FIELDS
+from data_handler import DataLogger
 
 import dash
 from dash import dcc, html, Input, Output, State
@@ -55,6 +55,7 @@ event_q: Queue = Queue(maxsize=10000)
 # Config & helpers
 # --------------------------------------------------------------------------------------
 
+
 def load_config(path: str = CONFIG_FILE) -> Dict[str, Any]:
     with open(path, "r", encoding="utf-8") as fp:
         return yaml.safe_load(fp)
@@ -66,7 +67,13 @@ def decode_packet(data: bytes, fmt: str, mapping: Dict[str, int]) -> Dict[str, f
     return {name: values[idx] for name, idx in mapping.items()}
 
 
-def send_control_packet(cfg: Dict[str, Any], zero: float, motor: float = 0.0, assist: float = 0.0, k_val: float = 0.0) -> None:
+def send_control_packet(
+    cfg: Dict[str, Any],
+    zero: float,
+    motor: float = 0.0,
+    assist: float = 0.0,
+    k_val: float = 0.0,
+) -> None:
     """Send a 4-float packet containing the four control signals."""
     payload = struct.pack(CONTROL_FMT, zero, motor, assist, k_val)
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
@@ -76,6 +83,7 @@ def send_control_packet(cfg: Dict[str, Any], zero: float, motor: float = 0.0, as
 # --------------------------------------------------------------------------------------
 # Background UDP listener (fills a deque with decoded packets)
 # --------------------------------------------------------------------------------------
+
 
 def start_udp_listener(
     cfg: Dict[str, Any], buffer: Deque[Dict[str, float]], logger: DataLogger
@@ -95,15 +103,14 @@ def start_udp_listener(
             pass  # ignore if not supported
     sock.bind((cfg["udp"]["listen_host"], cfg["udp"]["listen_port"]))
     sock.setblocking(True)
-    sock.settimeout(1.0)           # add right after sock.setblocking(True)
-    packets_rcvd = 0               # counter
-    print(f"Listening for data on {cfg['udp']['listen_host']}:{cfg['udp']['listen_port']}")
+    sock.settimeout(1.0)  # add right after sock.setblocking(True)
+    packets_rcvd = 0  # counter
+    print(
+        f"Listening for data on {cfg['udp']['listen_host']}:{cfg['udp']['listen_port']}"
+    )
 
     # Data logging helpers
     last_saved_sim: float | None = None  # for 0.01s sim-time throttling
-
-    # debug helper
-    dbg_last_print = time.time()
 
     while True:
         try:
@@ -153,9 +160,11 @@ def start_udp_listener(
             # queue full – drop sample to avoid blocking UDP thread
             pass
 
+
 # --------------------------------------------------------------------------------------
 # Dash application
 # --------------------------------------------------------------------------------------
+
 
 def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> dash.Dash:
     app = dash.Dash(__name__)
@@ -165,26 +174,45 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
             html.H2("Simulink UDP Dashboard"),
             html.Div(
                 [
-                    html.Button("Toggle zero_signal (0)", id="zero-btn", n_clicks=0, style={"width": "220px"}),
+                    html.Button(
+                        "Toggle zero_signal (0)",
+                        id="zero-btn",
+                        n_clicks=0,
+                        style={"width": "220px"},
+                    ),
                     dcc.Store(id="zero-state", data=0),
                 ]
             ),
             EventSource(id="es", url="/events"),
             html.Hr(),
-            dcc.Graph(id="ankle", figure=go.Figure(
-                data=[go.Scatter(x=[], y=[], mode="lines", name="ankle_angle")],
-                layout=dict(yaxis=dict(range=[-60, 60]), title="Ankle Angle (deg)")
-            )),
-            dcc.Graph(id="press", figure=go.Figure(
-                data=[
-                    go.Scatter(x=[], y=[], mode="lines", name=f"pressure_{i}") 
-                    for i in range(1, 9)
-                ],
-                layout=dict(yaxis=dict(range=[0, 1000]), title="Pressure",
-                            legend=dict(orientation="h", yanchor="bottom",
-                                        y=1.02, xanchor="left", x=0),
-                            margin=dict(t=60))
-            )),
+            dcc.Graph(
+                id="ankle",
+                figure=go.Figure(
+                    data=[go.Scatter(x=[], y=[], mode="lines", name="ankle_angle")],
+                    layout=dict(yaxis=dict(range=[-60, 60]), title="Ankle Angle (deg)"),
+                ),
+            ),
+            dcc.Graph(
+                id="press",
+                figure=go.Figure(
+                    data=[
+                        go.Scatter(x=[], y=[], mode="lines", name=f"pressure_{i}")
+                        for i in range(1, 9)
+                    ],
+                    layout=dict(
+                        yaxis=dict(range=[0, 1000]),
+                        title="Pressure",
+                        legend=dict(
+                            orientation="h",
+                            yanchor="bottom",
+                            y=1.02,
+                            xanchor="left",
+                            x=0,
+                        ),
+                        margin=dict(t=60),
+                    ),
+                ),
+            ),
         ]
     )
 
@@ -198,7 +226,9 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         State("zero-state", "data"),
         prevent_initial_call=True,
     )
-    def toggle_zero(n_clicks: int, current_state: int):  # pylint: disable=unused-argument
+    def toggle_zero(
+        n_clicks: int, current_state: int
+    ):  # pylint: disable=unused-argument
         next_state = 1 - (current_state or 0)
         send_control_packet(cfg, zero=next_state)
         label = f"Toggle zero_signal ({next_state})"
@@ -250,22 +280,25 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         if len(plot_state["times"]) < 5:
             print(f"push_batch first payload → count={len(times)}")
 
-        ankle_payload = dict(
-            x=[times],
-            y=[ankles],
-            traceIndices=[0],
-            maxPoints=1000,
-        )
+        ankle_payload = dict(x=[times], y=[ankles])
 
         # transpose pressures -> 8 traces
         transposed = list(zip(*pressures)) if pressures else [[] for _ in range(8)]
         press_payload = dict(
             x=[times for _ in range(8)],
             y=[list(tr) for tr in transposed],
-            traceIndices=list(range(8)),
-            maxPoints=1000,
         )
-        return ankle_payload, press_payload
+
+        # dcc.Graph.extendData expects a tuple of (data, trace_indices, max_points)
+        return (
+            ankle_payload,
+            [0],
+            1000,
+        ), (
+            press_payload,
+            list(range(8)),
+            1000,
+        )
 
     # ------------------------------------------------------------------
     # SSE endpoint: /events  (one single connection per browser client)

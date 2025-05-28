@@ -1,11 +1,11 @@
-from __future__ import annotations
-
 """frontend_dash.py – minimal Dash app that consumes the /events SSE feed and
 prints the latest sample plus a live graph.
 
 Run this *after* you have listener.py and sse_server.py running.
 This isolates the front-end side so you can test it independently.
 """
+
+from __future__ import annotations
 
 import dash
 from dash import html, dcc, Output, Input
@@ -19,10 +19,20 @@ app.layout = html.Div(
     [
         html.H3("DEBUG Dash Frontend"),
         EventSource(id="es", url="http://127.0.0.1:8051/events"),
-        html.Pre(id="raw", style={"height": "120px", "overflowY": "scroll", "border": "1px solid #ccc"}),
-        dcc.Graph(id="angle", figure=go.Figure(layout=dict(yaxis=dict(range=[-60, 60])))),
+        html.Pre(
+            id="raw",
+            style={
+                "height": "120px",
+                "overflowY": "scroll",
+                "border": "1px solid #ccc",
+            },
+        ),
+        dcc.Graph(
+            id="angle", figure=go.Figure(layout=dict(yaxis=dict(range=[-60, 60])))
+        ),
     ]
 )
+
 
 @app.callback(
     Output("raw", "children"),
@@ -46,8 +56,10 @@ def got_msg(msg):
 
     raw_line = json.dumps(payload, indent=2)
 
-    extend = dict(x=[[t]], y=[[ankle]], traceIndices=[0], maxPoints=1000)
-    return raw_line, extend
+    extend = dict(x=[[t]], y=[[ankle]])
+    # Return tuple as required by dcc.Graph.extendData
+    return raw_line, (extend, [0], 1000)
+
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8050, debug=True) 
+    app.run(host="0.0.0.0", port=8050, debug=True)

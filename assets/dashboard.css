@@ -1,5 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed&display=swap');
+
 .dashboard {
     padding: 10px;
+}
+
+.dashboard h2 {
+    text-align: center;
+    font-family: 'IBM Plex Sans Condensed', sans-serif;
 }
 .controls {
     display: flex;

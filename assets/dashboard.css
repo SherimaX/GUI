@@ -6,6 +6,25 @@
     justify-content: space-evenly;
     margin-bottom: 10px;
 }
+
+.controls button {
+    padding: 10px 20px;
+    border: 1px solid #bbb;
+    border-radius: 12px;
+    background: linear-gradient(#f5f5f5, #e0e0e0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.controls button:hover {
+    background: linear-gradient(#ffffff, #e8e8e8);
+}
+
+.controls button:active {
+    background: linear-gradient(#e0e0e0, #d0d0d0);
+}
 .plots {
     display: flex;
     flex-direction: row;

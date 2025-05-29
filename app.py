@@ -165,8 +165,6 @@ def start_udp_listener(
     sock.bind((cfg["udp"]["listen_host"], cfg["udp"]["listen_port"]))
     sock.setblocking(True)
     sock.settimeout(1.0)  # add right after sock.setblocking(True)
-    packets_rcvd = 0  # counter
-    last_status = time.time()
     print(
         f"Listening for data on {cfg['udp']['listen_host']}:{cfg['udp']['listen_port']}"
         )
@@ -178,7 +176,6 @@ def start_udp_listener(
         except socket.timeout:
             continue
 
-        packets_rcvd += 1
         if len(data) != expected:
             continue  # ignore malformed packet
         decoded = decode_packet(data, fmt, mapping)
@@ -224,9 +221,7 @@ def start_udp_listener(
                 event_q.put_nowait(sample)
             except Exception:
                 pass
-        now = time.time()
-        if now - last_status >= 10.0:
-            last_status = now
+
 
 
 def start_fake_data(

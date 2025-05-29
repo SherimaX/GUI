@@ -11,7 +11,7 @@ Run:
     python app.py  # then open http://127.0.0.1:8050 in a browser
 
 Make sure Simulink is broadcasting the 112-byte data packets defined in
-`config.yaml`. The app listens on the configured port and updates at ~10 Hz.
+`config.yaml`. The app listens on the configured port and updates at ~100 Hz.
 """
 
 from __future__ import annotations
@@ -51,7 +51,8 @@ COLOR_CYCLE = [
 CONFIG_FILE = "config.yaml"
 CONTROL_FMT = "<4f"  # zero, motor, assist, k  (4 × float32 = 16 bytes)
 HISTORY = 5000  # number of samples to keep for plotting (increased)
-UPDATE_MS = 100  # throttle SSE updates to this interval (ms)
+# Send SSE batches every 10 ms so the frontend receives data at ~100 Hz
+UPDATE_MS = 10  # throttle SSE updates to this interval (ms)
 N_WINDOW_SEC = 10  # how many seconds of data to show in plots
 
 # Shared state for plotting (producer: UDP listener, consumer: Dash callback)
@@ -228,7 +229,8 @@ def start_fake_data(
     """Generate synthetic samples when the Simulink host is unreachable."""
     print("Simulink host unreachable – using fake data generator")
     t = 0.0
-    dt = 0.1
+    # 100 Hz update rate
+    dt = 0.01
     while True:
         ankle = 20.0 * math.sin(t)
         torque = 5.0 * math.sin(t / 2.0)

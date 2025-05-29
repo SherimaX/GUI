@@ -416,13 +416,12 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                 go.Scatter(
                                                     x=[],
                                                     y=[],
-                                                    mode="lines+markers",
+                                                    mode="lines",
                                                     name=f"pressure_{i}",
                                                     line=dict(
                                                         width=3,
                                                         color=COLOR_CYCLE[(i - 1) % len(COLOR_CYCLE)],
                                                     ),
-                                                    marker=dict(symbol="circle", size=6),
                                                 )
                                                 for i in range(1, 9)
                                             ],
@@ -468,13 +467,12 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                 go.Scatter(
                                                     x=[],
                                                     y=[],
-                                                    mode="lines+markers",
+                                                    mode="lines",
                                                     name=f"imu_{i}",
                                                     line=dict(
                                                         width=3,
                                                         color=COLOR_CYCLE[(i - 1) % len(COLOR_CYCLE)],
                                                     ),
-                                                    marker=dict(symbol="circle", size=6),
                                                 )
                                                 for i in range(1, 4)
                                             ],

@@ -27,4 +27,6 @@ if (document.readyState === 'loading') {
 
 // Re-apply glow after plots update (e.g., when data extends)
 document.addEventListener('plotly_afterplot', applyGlow);
+document.addEventListener('plotly_restyle', applyGlow);
+document.addEventListener('plotly_redraw', applyGlow);
 

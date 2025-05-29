@@ -5,7 +5,7 @@ Features implemented:
 1. Toggle four control signals via buttons, sending a 4‑float packet.
 2. Live chart of `ankle_angle` (y-range −60…+60 deg).
 3. Live chart of the 8 plantar pressure signals (shared axis 0…1000 N).
-4. Live chart of actual torque and the first six IMU channels.
+4. Live chart of actual torque and the first 3 IMU channels.
 
 Run:
     python app.py  # then open http://127.0.0.1:8050 in a browser
@@ -48,7 +48,7 @@ plot_state: Dict[str, Any] = {
     "ankle": collections.deque(maxlen=1000),
     "torque": collections.deque(maxlen=1000),
     "pressures": {i: collections.deque(maxlen=1000) for i in range(1, 9)},
-    "imus": {i: collections.deque(maxlen=1000) for i in range(1, 7)},
+    "imus": {i: collections.deque(maxlen=1000) for i in range(1, 13)},
 }
 
 # Queue for server-sent events (SSE) to push fresh samples to the browser
@@ -144,7 +144,7 @@ def start_udp_listener(
             plot_state["torque"].append(torque)
             for i in range(1, 9):
                 plot_state["pressures"][i].append(decoded.get(f"pressure_{i}", 0.0))
-            for i in range(1, 7):
+            for i in range(1, 13):
                 plot_state["imus"][i].append(decoded.get(f"imu_{i}", 0.0))
 
         # Append to CSV every 0.01 s of simulation time
@@ -163,7 +163,7 @@ def start_udp_listener(
             "ankle": ankle,
             "torque": torque,
             "press": [decoded.get(f"pressure_{i}", 0.0) for i in range(1, 9)],
-            "imu": [decoded.get(f"imu_{i}", 0.0) for i in range(1, 7)],
+            "imu": [decoded.get(f"imu_{i}", 0.0) for i in range(1, 13)],
         }
         try:
             event_q.put_nowait(sample)
@@ -302,7 +302,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                         figure=go.Figure(
                             data=[
                                 go.Scatter(x=[], y=[], mode="lines", name=f"imu_{i}")
-                                for i in range(1, 7)
+                                for i in range(1, 4)
                             ],
                             layout=dict(
                                 yaxis=dict(
@@ -478,9 +478,10 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
             y=[list(tr) for tr in transposed],
         )
 
-        transposed_imu = list(zip(*imus)) if imus else [[] for _ in range(6)]
+        transposed_imu = list(zip(*imus)) if imus else [[] for _ in range(3)]
+        transposed_imu = transposed_imu[:3]
         imu_payload = dict(
-            x=[times for _ in range(6)],
+            x=[times for _ in range(3)],
             y=[list(tr) for tr in transposed_imu],
         )
 
@@ -499,7 +500,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
             1000,
         ), (
             imu_payload,
-            list(range(6)),
+            list(range(3)),
             1000,
         )
 

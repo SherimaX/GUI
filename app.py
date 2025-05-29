@@ -177,7 +177,11 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
     # access. ``serve_locally`` is available on newer Dash versions but we
     # also fall back to the older ``css.config``/``scripts.config`` flags
     # for backwards compatibility.
-    app = dash.Dash(__name__, serve_locally=True)
+    # ``update_title`` is set to ``None`` so the browser tab always reads
+    # "AFO Dashboard" instead of the default "Updating..." message while
+    # callbacks are running.
+    app = dash.Dash(__name__, serve_locally=True, update_title=None)
+    app.title = "AFO Dashboard"
     if hasattr(app, "css") and hasattr(app.css, "config"):
         app.css.config.serve_locally = True
     if hasattr(app, "scripts") and hasattr(app.scripts, "config"):
@@ -186,7 +190,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
     app.layout = html.Div(
         className="dashboard",
         children=[
-            html.H2("Simulink UDP Dashboard"),
+            html.H2("AFO Dashboard"),
             html.Div(
                 className="controls",
                 children=[

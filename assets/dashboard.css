@@ -68,6 +68,7 @@ body {
     border-radius: 12px;
     background: transparent;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+    height: 380px; /* bigger to avoid clipping the shadow */
 }
 @media (max-width: 1024px) {
     .plots {
@@ -82,11 +83,35 @@ body {
     display: none;
 }
 
+.tab-buttons {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.tab-buttons button {
+    flex: 1 1 50%;
+    padding: 8px 12px;
+    border: none;
+    background: #ddd;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.tab-buttons button.active {
+    background: #bbb;
+}
+
 .swipe-container {
     display: flex;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* hide scrollbar in Firefox */
+    -ms-overflow-style: none; /* hide scrollbar in IE/Edge */
+}
+.swipe-container::-webkit-scrollbar {
+    display: none; /* hide scrollbar in Chrome/Safari */
 }
 
 .swipe-page {

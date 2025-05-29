@@ -291,6 +291,14 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
             html.Div(id="signal-sent", style={"display": "none"}),
             dcc.Interval(id="zero-interval", interval=100, n_intervals=0),
             html.Div(EventSource(id="es", url="/events"), style={"display": "none"}),
+            dcc.Store(id="tab-index", data=0),
+            html.Div(
+                className="tab-buttons",
+                children=[
+                    html.Button("Angle + Torque", id="tab-angle", n_clicks=0, className="active"),
+                    html.Button("Insole", id="tab-insole", n_clicks=0),
+                ],
+            ),
             html.Div(
                 className="swipe-container",
                 children=[
@@ -528,6 +536,33 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         Input("k-btn", "n_clicks"),
         State("k-state", "data"),
         prevent_initial_call=True,
+    )
+
+    app.clientside_callback(
+        """
+        function(n0, n1, idx){
+            var ctx = dash_clientside.callback_context;
+            if(typeof idx !== 'number') idx = 0;
+            if(ctx.triggered.length){
+                var id = ctx.triggered[0].prop_id.split('.')[0];
+                if(id === 'tab-angle'){ idx = 0; }
+                else if(id === 'tab-insole'){ idx = 1; }
+            }
+            var cont = document.querySelector('.swipe-container');
+            if(cont){
+                var width = cont.clientWidth;
+                cont.scrollTo({left: width * idx, behavior: 'smooth'});
+            }
+            return [idx, idx===0 ? 'active' : '', idx===1 ? 'active' : ''];
+        }
+        """,
+        Output("tab-index", "data"),
+        Output("tab-angle", "className"),
+        Output("tab-insole", "className"),
+        Input("tab-angle", "n_clicks"),
+        Input("tab-insole", "n_clicks"),
+        State("tab-index", "data"),
+        prevent_initial_call=False,
     )
 
     # ------------------------------------------------------------------

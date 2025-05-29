@@ -12,10 +12,10 @@ udp:
 packet:
   # struct-format string describing the binary layout of a single UDP datagram.
   # Below: 28 little-endian 32-bit floats (28 × 4 bytes = 112 bytes). Change to "<d" if you use doubles.
-  format: "<30f"
+  format: "<28f"
 
   # Total number of signals contained in one packet (redundant but explicit).
-  size: 30
+  size: 28
 
 # Mapping from human-friendly signal names to their 0-based position in the packet.
 # Extend or modify as your Simulink model evolves.
@@ -53,5 +53,3 @@ signals:
   actual_torque: 25
   heel_strike: 26
   assistance_level: 27
-  estimated_ankle_moment: 28
-  empty: 29

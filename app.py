@@ -658,20 +658,19 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
             var cont = document.querySelector('.swipe-container');
             var highlight = document.getElementById('tabHighlight');
             var offset = 0;
-            var width = 0;
             if(cont){
-                width = cont.clientWidth;
+                var width = cont.clientWidth;
                 cont.scrollTo({left: width * idx, behavior: 'smooth'});
                 if(highlight){
                     var tabWidth = width / 2;
-                    offset = idx * tabWidth;
+                    offset = idx * tabWidth + (tabWidth - highlight.offsetWidth)/2;
                 }
             }
             return [
                 idx,
                 idx===0 ? 'active' : '',
                 idx===1 ? 'active' : '',
-                {transform: 'translateX(' + offset + 'px)', width: (width/2)+'px'}
+                {transform: 'translateX(' + offset + 'px)'}
             ];
         }
         """,

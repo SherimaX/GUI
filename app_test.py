@@ -83,8 +83,8 @@ def update_figures(_):  # noqa: D401
     )
     fig_ankle.update_layout(
         title=None,
-        plot_bgcolor="rgba(0,0,0,0)",
-        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(240,240,240,0.4)",
+        paper_bgcolor="rgba(240,240,240,0.4)",
         font=dict(family="IBM Plex Sans Condensed", size=14),
     )
 
@@ -96,7 +96,7 @@ def update_figures(_):  # noqa: D401
             fig_press.add_trace(go.Scatter(x=times, y=df[key], mode="lines", name=key))
     fig_press.update_yaxes(
         range=[0, 1000],
-        title="Pressure (N)",
+        title="Pressure",
         gridcolor="#cccccc",
         tickfont=dict(size=12),
     )
@@ -105,8 +105,8 @@ def update_figures(_):  # noqa: D401
     )
     fig_press.update_layout(
         title=None,
-        plot_bgcolor="rgba(0,0,0,0)",
-        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(240,240,240,0.4)",
+        paper_bgcolor="rgba(240,240,240,0.4)",
         legend=dict(orientation="h"),
         font=dict(family="IBM Plex Sans Condensed", size=14),
     )

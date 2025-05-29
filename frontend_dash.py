@@ -46,8 +46,8 @@ app.layout = html.Div(
                     ),
                     xaxis=dict(gridcolor="#cccccc", tickfont=dict(size=12)),
                     title=None,
-                    plot_bgcolor="rgba(0,0,0,0)",
-                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(240,240,240,0.4)",
+                    paper_bgcolor="rgba(240,240,240,0.4)",
                     font=dict(family="IBM Plex Sans Condensed", size=14),
                 )
             ),

@@ -190,16 +190,17 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
             html.Div(
                 className="controls",
                 children=[
-                    html.Button("zero (0)", id="zero-btn", n_clicks=0),
-                    html.Button("motor (0)", id="motor-btn", n_clicks=0),
-                    html.Button("assist (0)", id="assist-btn", n_clicks=0),
-                    html.Button("k (0)", id="k-btn", n_clicks=0),
+                    html.Button("zero", id="zero-btn", n_clicks=0),
+                    html.Button("motor", id="motor-btn", n_clicks=0),
+                    html.Button("assist", id="assist-btn", n_clicks=0),
+                    html.Button("k", id="k-btn", n_clicks=0),
                 ],
             ),
             dcc.Store(id="zero-state", data=0),
             dcc.Store(id="motor-state", data=0),
             dcc.Store(id="assist-state", data=0),
             dcc.Store(id="k-state", data=0),
+            dcc.Interval(id="zero-interval", interval=100, n_intervals=0),
             EventSource(id="es", url="/events"),
             html.Hr(),
             html.Div(
@@ -246,66 +247,76 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
     )
 
     # ------------------------------------------------------------------
+    # Client-side callback: update zero-state while button is held
+    # ------------------------------------------------------------------
+    app.clientside_callback(
+        """
+        function(n) {
+            var btn = document.getElementById('zero-btn');
+            if(btn && btn.matches(':active')) {
+                return 1;
+            }
+            return 0;
+        }
+        """,
+        Output("zero-state", "data"),
+        Input("zero-interval", "n_intervals"),
+        prevent_initial_call=False,
+    )
+
+    # ------------------------------------------------------------------
     # Callback: Toggle control signals & send packet
     # ------------------------------------------------------------------
     @app.callback(
-        Output("zero-btn", "children"),
-        Output("motor-btn", "children"),
-        Output("assist-btn", "children"),
-        Output("k-btn", "children"),
-        Output("zero-state", "data"),
+        Output("zero-btn", "className"),
+        Output("motor-btn", "className"),
+        Output("assist-btn", "className"),
+        Output("k-btn", "className"),
         Output("motor-state", "data"),
         Output("assist-state", "data"),
         Output("k-state", "data"),
-        Input("zero-btn", "n_clicks"),
+        Input("zero-state", "data"),
         Input("motor-btn", "n_clicks"),
         Input("assist-btn", "n_clicks"),
         Input("k-btn", "n_clicks"),
-        State("zero-state", "data"),
         State("motor-state", "data"),
         State("assist-state", "data"),
         State("k-state", "data"),
         prevent_initial_call=True,
     )
     def toggle_signals(
-        n_zero: int,
+        zero_state: int,
         n_motor: int,
         n_assist: int,
         n_k: int,
-        zero_state: int,
         motor_state: int,
         assist_state: int,
         k_state: int,
-    ) -> tuple[str, str, str, str, int, int, int, int]:
+    ) -> tuple[str, str, str, str, int, int, int]:
         ctx = dash.callback_context
-        if not ctx.triggered:
-            raise dash.exceptions.PreventUpdate
-        triggered = ctx.triggered[0]["prop_id"].split(".")[0]
+        triggered = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else ""
 
-        zero_state = zero_state or 0
         motor_state = motor_state or 0
         assist_state = assist_state or 0
         k_state = k_state or 0
 
-        if triggered == "zero-btn":
-            zero_state = 1 - zero_state
-        elif triggered == "motor-btn":
+        if triggered == "motor-btn":
             motor_state = 1 - motor_state
         elif triggered == "assist-btn":
             assist_state = 1 - assist_state
         elif triggered == "k-btn":
             k_state = 1 - k_state
-        else:
-            raise dash.exceptions.PreventUpdate
 
         send_control_packet(cfg, zero_state, motor_state, assist_state, k_state)
 
+        def cls(s: int) -> str:
+            return "on" if s else ""
+
         return (
-            f"zero ({zero_state})",
-            f"motor ({motor_state})",
-            f"assist ({assist_state})",
-            f"k ({k_state})",
-            zero_state,
+            cls(zero_state),
+            cls(motor_state),
+            cls(assist_state),
+            cls(k_state),
             motor_state,
             assist_state,
             k_state,

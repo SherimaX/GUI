@@ -5,4 +5,3 @@
 __pycache__/
 
 # Ignore log files
-data_log.csv

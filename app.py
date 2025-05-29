@@ -31,7 +31,6 @@ import json
 from queue import Queue
 from flask import Response
 from dash_extensions import EventSource
-from data_handler import DataLogger
 
 import dash
 from dash import dcc, html, Input, Output, State
@@ -54,7 +53,6 @@ CONTROL_FMT = "<4f"  # zero, motor, assist, k  (4 × float32 = 16 bytes)
 HISTORY = 5000  # number of samples to keep for plotting (increased)
 UPDATE_MS = 100  # throttle SSE updates to this interval (ms)
 N_WINDOW_SEC = 10  # how many seconds of data to show in plots
-LOG_FILE = "data_log.csv"
 
 # Shared state for plotting (producer: UDP listener, consumer: Dash callback)
 plot_lock = threading.Lock()
@@ -85,7 +83,7 @@ def make_line_with_marker(name: str, color: str) -> list[go.Scattergl]:
         line=dict(width=3, color=color),
         legendgroup=name,
         showlegend=False,
-    )
+        )
     marker = go.Scattergl(
         x=[None],
         y=[None],
@@ -94,7 +92,7 @@ def make_line_with_marker(name: str, color: str) -> list[go.Scattergl]:
         marker=dict(size=8, color=color, symbol="circle"),
         legendgroup=name,
         showlegend=True,
-    )
+        )
     return [line, marker]
 
 # --------------------------------------------------------------------------------------
@@ -146,7 +144,7 @@ def send_control_packet(
 
 
 def start_udp_listener(
-    cfg: Dict[str, Any], buffer: Deque[Dict[str, float]], logger: DataLogger
+    cfg: Dict[str, Any], buffer: Deque[Dict[str, float]]
 ) -> None:
     fmt = cfg["packet"]["format"]
     expected = struct.calcsize(fmt)
@@ -168,9 +166,8 @@ def start_udp_listener(
     last_status = time.time()
     print(
         f"Listening for data on {cfg['udp']['listen_host']}:{cfg['udp']['listen_port']}"
-    )
+        )
 
-    # Data logging helpers
 
     while True:
         try:
@@ -199,9 +196,6 @@ def start_udp_listener(
             for i in range(1, 13):
                 plot_state["imus"][i].append(decoded.get(f"imu_{i}", 0.0))
 
-        # Log every received packet to the CSV
-        pressures = [decoded.get(f"pressure_{i}", 0.0) for i in range(1, 9)]
-        logger.log(sim_t, ankle, pressures)
 
         # ------------------------------------------------------------------
         # Push latest sample to SSE queue (non-blocking)
@@ -229,7 +223,7 @@ def start_udp_listener(
 
 
 def start_fake_data(
-    cfg: Dict[str, Any], buffer: Deque[Dict[str, float]], logger: DataLogger
+    cfg: Dict[str, Any], buffer: Deque[Dict[str, float]]
 ) -> None:
     """Generate synthetic samples when the Simulink host is unreachable."""
     print("Simulink host unreachable – using fake data generator")
@@ -238,7 +232,6 @@ def start_fake_data(
     while True:
         ankle = 20.0 * math.sin(t)
         torque = 5.0 * math.sin(t / 2.0)
-        pressures = [500.0 + 100.0 * math.sin(t + i) for i in range(8)]
         imus = [math.sin(t + i * 0.1) for i in range(12)]
 
         sample = {
@@ -262,7 +255,6 @@ def start_fake_data(
             for i, val in enumerate(imus, 1):
                 plot_state["imus"][i].append(val)
 
-        logger.log(t, ankle, pressures)
 
         try:
             event_q.put_nowait(
@@ -273,7 +265,7 @@ def start_fake_data(
                     "press": pressures,
                     "imu": imus,
                 }
-            )
+        )
         except Exception:
             pass
 
@@ -319,7 +311,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                         ],
                     )
                 ],
-            ),
+        ),
             dcc.Store(id="zero-state", data=0),
             dcc.Store(id="motor-state", data=0),
             dcc.Store(id="assist-state", data=0),
@@ -334,7 +326,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                     html.Button("Angle + Torque", id="tab-angle", n_clicks=0, className="active"),
                     html.Button("Insole", id="tab-insole", n_clicks=0),
                 ],
-            ),
+        ),
             html.Div(
                 className="swipe-container",
                 children=[
@@ -511,9 +503,9 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                         ],
                     ),
                 ],
-            ),
+        ),
         ],
-    )
+        )
 
     # ------------------------------------------------------------------
     # Client-side callbacks for instantaneous button feedback
@@ -531,7 +523,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         Output("zero-btn", "className"),
         Input("zero-interval", "n_intervals"),
         prevent_initial_call=False,
-    )
+        )
 
 
     app.clientside_callback(
@@ -548,7 +540,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         Input("motor-btn", "n_clicks"),
         State("motor-state", "data"),
         prevent_initial_call=True,
-    )
+        )
 
     app.clientside_callback(
         """
@@ -564,7 +556,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         Input("assist-btn", "n_clicks"),
         State("assist-state", "data"),
         prevent_initial_call=True,
-    )
+        )
 
     app.clientside_callback(
         """
@@ -580,7 +572,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         Input("k-btn", "n_clicks"),
         State("k-state", "data"),
         prevent_initial_call=True,
-    )
+        )
 
     app.clientside_callback(
         """
@@ -607,7 +599,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         Input("tab-insole", "n_clicks"),
         State("tab-index", "data"),
         prevent_initial_call=False,
-    )
+        )
 
     # ------------------------------------------------------------------
     # Callback: send control packet when signal states change
@@ -619,13 +611,13 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         Input("assist-state", "data"),
         Input("k-state", "data"),
         prevent_initial_call=True,
-    )
+        )
     def update_signals(
         zero_state: int,
         motor_state: int,
         assist_state: int,
         k_state: int,
-    ) -> str:
+        ) -> str:
         send_control_packet(cfg, zero_state, motor_state, assist_state, k_state)
         return ""
 
@@ -693,7 +685,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         Output("imu", "extendData"),
         Input("es", "message"),
         prevent_initial_call=True,
-    )
+        )
 
     # ------------------------------------------------------------------
     # SSE endpoint: /events  (one single connection per browser client)
@@ -757,7 +749,6 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
 if __name__ == "__main__":
     cfg = load_config()
 
-    logger = DataLogger(LOG_FILE)
     data_queue: Deque[Dict[str, float]] = collections.deque(maxlen=HISTORY)
 
     # Spin up the UDP listener, falling back to a fake data generator if the
@@ -768,19 +759,16 @@ if __name__ == "__main__":
 
     listener_t = threading.Thread(
         target=target_fn,
-        args=(cfg, data_queue, logger),
+        args=(cfg, data_queue),
         daemon=True,
-    )
+        )
     listener_t.start()
 
-    try:
-        dash_app = build_dash_app(cfg, data_queue)
-        dash_app.run(
-            host="127.0.0.1",
-            port=8050,
-            debug=True,
-            use_reloader=False,
-            threaded=True,
+    dash_app = build_dash_app(cfg, data_queue)
+    dash_app.run(
+        host="127.0.0.1",
+        port=8050,
+        debug=True,
+        use_reloader=False,
+        threaded=True,
         )
-    finally:
-        logger.stop()

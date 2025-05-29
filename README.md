@@ -12,7 +12,7 @@ A lightweight, real-time dashboard built with Python that communicates with MATL
 | **UI components** | `dash-bootstrap-components`, `dash-daq` | Off-the-shelf widgets for buttons, toggles, numeric LEDs, gauges, etc., plus Bootstrap styling for responsive layout. |
 | **Realtime plotting** | `plotly` (comes with Dash) | High-performance WebGL rendering for streaming data. |
 | **Networking** | Python standard library `asyncio` + `socket` | Non-blocking UDP client/server implementation without extra dependencies. |
-| **Data handling** | `pandas`, `numpy` | Fast buffering, filtering, and transformation of numeric data before visualisation. |
+| **Data handling** | Python built-ins (`collections`) | Fast buffering, filtering, and transformation of numeric data before visualisation. |
 | **Packaging / runtime** | `uvicorn` (optional) or the built-in Dash dev server | Easy local development; `uvicorn` or `gunicorn` can be used for production deployment. |
 
 > Feel free to replace Dash with alternatives such as **Streamlit**, **Panel**, or a custom **FastAPI + React** stack. Dash is chosen here because it keeps everything in pure Python and simplifies live callbacks.
@@ -31,9 +31,6 @@ plotly~=5.18  # underlying charting engine
 dash-bootstrap-components~=1.5  # nicer layout & styling
 dash-daq~=0.5  # gauges, numeric LEDs, etc.
 
-# data wrangling
-pandas~=2.2
-numpy~=1.26
 
 # async UDP networking (built-in)
 asyncio  # part of the Python stdlib, no install needed
@@ -91,8 +88,7 @@ pip install -r requirements.txt
 7. Open `http://127.0.0.1:8050` in your browser. You should see live plots once Simulink starts streaming.
 8. If the Simulink board is unreachable the app automatically generates fake
    data so you can exercise the dashboard offline.
-9. Logged CSV data is treated as a rolling buffer—only the latest 1000 samples
-   are kept on disk.
+9. Incoming data is kept in memory only—nothing is written to CSV.
 
 ---
 

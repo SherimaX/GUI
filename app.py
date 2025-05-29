@@ -310,6 +310,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                 children=[
                                     dcc.Graph(
                                         id="torque",
+                                        style={"height": "360px"},
                                         figure=go.Figure(
                                             data=[
                                                 go.Scatter(
@@ -343,6 +344,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                     ),
                                     dcc.Graph(
                                         id="ankle",
+                                        style={"height": "360px"},
                                         figure=go.Figure(
                                             data=[
                                                 go.Scatter(
@@ -386,6 +388,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                 children=[
                                     dcc.Graph(
                                         id="press",
+                                        style={"height": "360px"},
                                         figure=go.Figure(
                                             data=[
                                                 go.Scatter(
@@ -428,6 +431,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                     ),
                                     dcc.Graph(
                                         id="imu",
+                                        style={"height": "360px"},
                                         figure=go.Figure(
                                             data=[
                                                 go.Scatter(

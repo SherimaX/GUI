@@ -276,10 +276,10 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                     html.Div(
                         className="controls",
                         children=[
-                            html.Button("zero", id="zero-btn", n_clicks=0),
-                            html.Button("motor", id="motor-btn", n_clicks=0),
-                            html.Button("assist", id="assist-btn", n_clicks=0),
-                            html.Button("k", id="k-btn", n_clicks=0),
+                            html.Button("⚪", id="zero-btn", n_clicks=0),
+                            html.Button("⚪", id="motor-btn", n_clicks=0),
+                            html.Button("⚪", id="assist-btn", n_clicks=0),
+                            html.Button("⚪", id="k-btn", n_clicks=0),
                         ],
                     )
                 ],
@@ -484,11 +484,12 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         """
         function(n) {
             var active = document.getElementById('zero-btn').matches(':active');
-            return [active ? 1 : 0, active ? 'on' : ''];
+            return [active ? 1 : 0, active ? 'on' : '', active ? '⚫' : '⚪'];
         }
         """,
         Output("zero-state", "data"),
         Output("zero-btn", "className"),
+        Output("zero-btn", "children"),
         Input("zero-interval", "n_intervals"),
         prevent_initial_call=False,
     )
@@ -498,13 +499,14 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         """
         function(n, state){
             if(typeof state !== 'number') state = 0;
-            if(n === undefined){ return [state, state ? 'on' : '']; }
+            if(n === undefined){ return [state, state ? 'on' : '', state ? '⚫' : '⚪']; }
             var newState = 1 - state;
-            return [newState, newState ? 'on' : ''];
+            return [newState, newState ? 'on' : '', newState ? '⚫' : '⚪'];
         }
         """,
         Output("motor-state", "data"),
         Output("motor-btn", "className"),
+        Output("motor-btn", "children"),
         Input("motor-btn", "n_clicks"),
         State("motor-state", "data"),
         prevent_initial_call=True,
@@ -514,13 +516,14 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         """
         function(n, state){
             if(typeof state !== 'number') state = 0;
-            if(n === undefined){ return [state, state ? 'on' : '']; }
+            if(n === undefined){ return [state, state ? 'on' : '', state ? '⚫' : '⚪']; }
             var newState = 1 - state;
-            return [newState, newState ? 'on' : ''];
+            return [newState, newState ? 'on' : '', newState ? '⚫' : '⚪'];
         }
         """,
         Output("assist-state", "data"),
         Output("assist-btn", "className"),
+        Output("assist-btn", "children"),
         Input("assist-btn", "n_clicks"),
         State("assist-state", "data"),
         prevent_initial_call=True,
@@ -530,13 +533,14 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         """
         function(n, state){
             if(typeof state !== 'number') state = 0;
-            if(n === undefined){ return [state, state ? 'on' : '']; }
+            if(n === undefined){ return [state, state ? 'on' : '', state ? '⚫' : '⚪']; }
             var newState = 1 - state;
-            return [newState, newState ? 'on' : ''];
+            return [newState, newState ? 'on' : '', newState ? '⚫' : '⚪'];
         }
         """,
         Output("k-state", "data"),
         Output("k-btn", "className"),
+        Output("k-btn", "children"),
         Input("k-btn", "n_clicks"),
         State("k-state", "data"),
         prevent_initial_call=True,

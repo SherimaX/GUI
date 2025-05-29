@@ -30,14 +30,19 @@ body {
 }
 
 .controls button {
-    padding: 10px 20px;
+    width: 40px;
+    height: 40px;
+    padding: 0;
     border: none;
-    border-radius: 20px;
+    border-radius: 50%;
     background: #ffffff;
     color: #000000;
-    font-size: 16px;
+    font-size: 20px;
     cursor: pointer;
-    transition: background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, transform 0.1s;
 }
 
 
@@ -48,18 +53,21 @@ body {
 
 .controls button:active {
     background: #e0e0e0;
+    transform: scale(0.95);
 }
 
 .controls button.on {
-    background: #0c745f;
+    background: #000000;
+    color: #ffffff;
 }
 
 .controls button.on:hover {
-    background: #0b6554;
+    background: #222222;
 }
 
 .controls button.on:active {
-    background: #094e42;
+    background: #444444;
+    transform: scale(0.95);
 }
 .plots {
     display: flex;
@@ -112,7 +120,7 @@ body {
     background: #f0f0f0;
 }
 .tab-buttons button.active {
-    background: #10a37f;
+    background: #000000;
     color: #ffffff;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }

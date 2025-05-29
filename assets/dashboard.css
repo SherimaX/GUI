@@ -4,6 +4,11 @@
     padding: 10px;
 }
 
+body {
+    background: transparent;
+    font-family: 'IBM Plex Sans Condensed', sans-serif;
+}
+
 .dashboard h2 {
     text-align: center;
     font-family: 'IBM Plex Sans Condensed', sans-serif;
@@ -53,6 +58,10 @@
 .plots .dash-graph {
     flex: 1 1 45%;
     min-width: 0;
+    padding: 10px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 @media (max-width: 1024px) {
     .plots {

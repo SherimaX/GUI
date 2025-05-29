@@ -35,7 +35,22 @@ app.layout = html.Div(
             },
         ),
         dcc.Graph(
-            id="angle", figure=go.Figure(layout=dict(yaxis=dict(range=[-60, 60])))
+            id="angle",
+            figure=go.Figure(
+                layout=dict(
+                    yaxis=dict(
+                        range=[-60, 60],
+                        title="Ankle Angle (deg)",
+                        gridcolor="#cccccc",
+                        tickfont=dict(size=12),
+                    ),
+                    xaxis=dict(gridcolor="#cccccc", tickfont=dict(size=12)),
+                    title=None,
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    font=dict(family="IBM Plex Sans Condensed", size=14),
+                )
+            ),
         ),
     ]
 )

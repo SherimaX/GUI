@@ -20,6 +20,18 @@ import os
 LOG_FILE = "data_log.csv"
 REFRESH_MS = 500  # refresh interval for file polling
 
+# Consistent colors for pressure traces
+COLOR_CYCLE = [
+    "#0B74FF",
+    "#12C37E",
+    "#FF7F0E",
+    "#D62728",
+    "#9467BD",
+    "#8C564B",
+    "#E377C2",
+    "#7F7F7F",
+]
+
 # -----------------------------------------------------------------------------
 # Helpers
 # -----------------------------------------------------------------------------
@@ -73,9 +85,10 @@ def update_figures(_):  # noqa: D401
         go.Scatter(
             x=times,
             y=df["ankle_angle"],
-            mode="lines",
+            mode="lines+markers",
             name="ankle_angle",
             line=dict(width=3, color="#0B74FF"),
+            marker=dict(symbol="circle", size=6),
         )
     )
     fig_ankle.update_yaxes(
@@ -103,13 +116,16 @@ def update_figures(_):  # noqa: D401
     for i in range(1, 9):
         key = f"pressure_{i}"
         if key in df:
-            line_style = (
-                dict(width=3, color="#0B74FF")
-                if i == 1
-                else (dict(width=3, color="#12C37E") if i == 2 else None)
-            )
+            color = COLOR_CYCLE[(i - 1) % len(COLOR_CYCLE)]
             fig_press.add_trace(
-                go.Scatter(x=times, y=df[key], mode="lines", name=key, line=line_style)
+                go.Scatter(
+                    x=times,
+                    y=df[key],
+                    mode="lines+markers",
+                    name=key,
+                    line=dict(width=3, color=color),
+                    marker=dict(symbol="circle", size=6),
+                )
             )
     fig_press.update_yaxes(
         range=[0, 1000],

@@ -66,6 +66,7 @@ pip install -r requirements.txt
 
 * **asyncio task**: Listens on a configurable UDP port, parses incoming bytes into numeric arrays, and stores them in a thread-safe queue.
 * **Dash callback**: Polls the queue on a fixed interval (e.g. every 100 ms) and pushes the latest data to Plotly graphs and numeric readouts.
+* **Sample rate**: The dashboard expects incoming packets at roughly 100&nbsp;Hz. Adjust the `SAMPLE_RATE_HZ` constant in `app.py` if your model uses a different rate.
 * **Control panel**: UI widgets trigger another callback that sends UDP packets back to Simulink to adjust parameters or setpoint values.
 
 ---

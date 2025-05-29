@@ -5,7 +5,7 @@ One-shot UDP sender to test Simulink control signals.
 This script packs four single-precision floats—`zero_signal`, `motor_signal`,
 `assistance_signal`, and `fixed_k_signal`—into a 16-byte datagram and sends it
 once to the IP/port defined under `udp.send_host` / `udp.send_port` in
-`config.yaml` (default: 192.168.7.5:5432).
+`config.yaml` (default: 192.168.7.5:5431).
 
 Run with custom values:
 

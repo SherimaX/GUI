@@ -147,7 +147,6 @@ def start_udp_listener(
     )
 
     # Data logging helpers
-    last_saved_sim: float | None = None  # for 0.01s sim-time throttling
 
     while True:
         try:
@@ -176,13 +175,9 @@ def start_udp_listener(
             for i in range(1, 13):
                 plot_state["imus"][i].append(decoded.get(f"imu_{i}", 0.0))
 
-        # Append to CSV every 0.01 s of simulation time
-        if sim_t is not None and (
-            last_saved_sim is None or (sim_t - last_saved_sim) >= 0.01
-        ):
-            last_saved_sim = sim_t
-            pressures = [decoded.get(f"pressure_{i}", 0.0) for i in range(1, 9)]
-            logger.log(sim_t, ankle, pressures)
+        # Log every received packet to the CSV
+        pressures = [decoded.get(f"pressure_{i}", 0.0) for i in range(1, 9)]
+        logger.log(sim_t, ankle, pressures)
 
         # ------------------------------------------------------------------
         # Push latest sample to SSE queue (non-blocking)
@@ -210,7 +205,7 @@ def start_fake_data(
     """Generate synthetic samples when the Simulink host is unreachable."""
     print("Simulink host unreachable – using fake data generator")
     t = 0.0
-    dt = 0.01
+    dt = 0.1
     while True:
         ankle = 20.0 * math.sin(t)
         torque = 5.0 * math.sin(t / 2.0)

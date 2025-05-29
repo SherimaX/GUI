@@ -70,16 +70,23 @@ def update_figures(_):  # noqa: D401
     # Ankle angle
     fig_ankle = go.Figure()
     fig_ankle.add_trace(
-        go.Scatter(x=times, y=df["ankle_angle"], mode="lines", name="ankle_angle")
+        go.Scatter(
+            x=times,
+            y=df["ankle_angle"],
+            mode="lines",
+            name="ankle_angle",
+            line=dict(width=4, color="#0B74FF"),
+        )
     )
     fig_ankle.update_yaxes(
         range=[-60, 60],
         title="Ankle Angle (deg)",
-        gridcolor="#cccccc",
+        gridcolor="#EEF1F4",
+        gridwidth=1,
         tickfont=dict(size=12),
     )
     fig_ankle.update_xaxes(
-        range=[times[0], times[-1]], gridcolor="#cccccc", tickfont=dict(size=12)
+        range=[times[0], times[-1]], showgrid=False, tickfont=dict(size=12)
     )
     fig_ankle.update_layout(
         title=None,
@@ -93,15 +100,23 @@ def update_figures(_):  # noqa: D401
     for i in range(1, 9):
         key = f"pressure_{i}"
         if key in df:
-            fig_press.add_trace(go.Scatter(x=times, y=df[key], mode="lines", name=key))
+            line_style = (
+                dict(width=4, color="#0B74FF")
+                if i == 1
+                else (dict(width=4, color="#12C37E") if i == 2 else None)
+            )
+            fig_press.add_trace(
+                go.Scatter(x=times, y=df[key], mode="lines", name=key, line=line_style)
+            )
     fig_press.update_yaxes(
         range=[0, 1000],
         title="Pressure",
-        gridcolor="#cccccc",
+        gridcolor="#EEF1F4",
+        gridwidth=1,
         tickfont=dict(size=12),
     )
     fig_press.update_xaxes(
-        range=[times[0], times[-1]], gridcolor="#cccccc", tickfont=dict(size=12)
+        range=[times[0], times[-1]], showgrid=False, tickfont=dict(size=12)
     )
     fig_press.update_layout(
         title=None,

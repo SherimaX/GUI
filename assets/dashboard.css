@@ -75,7 +75,7 @@ button {
     gap: 20px;
 }
 .plots .dash-graph {
-    flex: 1 1 45%;
+    flex: 1 1 30%;
     min-width: 0;
     padding: 10px;
     border-radius: 12px;

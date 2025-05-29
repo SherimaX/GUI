@@ -388,6 +388,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                     tickfont=dict(size=16),
                                                 ),
                                                 title=None,
+                                                showlegend=False,
                                                 plot_bgcolor="rgba(0,0,0,0)",
                                                 paper_bgcolor="rgba(0,0,0,0)",
                                                 font=dict(
@@ -421,6 +422,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                     tickfont=dict(size=16),
                                                 ),
                                                 title=None,
+                                                showlegend=False,
                                                 plot_bgcolor="rgba(0,0,0,0)",
                                                 paper_bgcolor="rgba(0,0,0,0)",
                                                 font=dict(
@@ -454,6 +456,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                     tickfont=dict(size=16),
                                                 ),
                                                 title=None,
+                                                showlegend=False,
                                                 plot_bgcolor="rgba(0,0,0,0)",
                                                 paper_bgcolor="rgba(0,0,0,0)",
                                                 font=dict(
@@ -548,7 +551,13 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                     tickfont=dict(size=16),
                                                 ),
                                                 title=None,
-                                                legend=dict(orientation="h"),
+                                                legend=dict(
+                                                    orientation="h",
+                                                    yanchor="bottom",
+                                                    y=1.02,
+                                                    xanchor="left",
+                                                    x=0,
+                                                ),
                                                 margin=dict(t=60),
                                                 plot_bgcolor="rgba(0,0,0,0)",
                                                 paper_bgcolor="rgba(0,0,0,0)",

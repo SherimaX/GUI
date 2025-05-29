@@ -32,6 +32,10 @@
 .controls button:active {
     background: linear-gradient(#e0e0e0, #d0d0d0);
 }
+
+.controls button.on {
+    background: lightgreen;
+}
 .plots {
     display: flex;
     flex-direction: row;

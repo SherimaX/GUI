@@ -663,7 +663,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                 cont.scrollTo({left: width * idx, behavior: 'smooth'});
                 if(highlight){
                     var tabWidth = width / 2;
-                    offset = idx * tabWidth + (tabWidth - highlight.offsetWidth)/2;
+                    offset = idx * tabWidth;
                 }
             }
             return [

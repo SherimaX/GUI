@@ -61,6 +61,7 @@ plot_state: Dict[str, Any] = {
     "times": collections.deque(maxlen=1000),
     "ankle": collections.deque(maxlen=1000),
     "torque": collections.deque(maxlen=1000),
+    "gait": collections.deque(maxlen=1000),
     "pressures": {i: collections.deque(maxlen=1000) for i in range(1, 9)},
     "imus": {i: collections.deque(maxlen=1000) for i in range(1, 13)},
 }
@@ -185,6 +186,7 @@ def start_udp_listener(
         sim_t = decoded.get("time", decoded.get("Time", 0.0))
         ankle = decoded.get("ankle_angle", 0.0)
         torque = decoded.get("actual_torque", 0.0)
+        gait = decoded.get("gait_percentage", 0.0)
         buffer.append(decoded)
 
         # Update in-memory plots
@@ -192,6 +194,7 @@ def start_udp_listener(
             plot_state["times"].append(sim_t)
             plot_state["ankle"].append(ankle)
             plot_state["torque"].append(torque)
+            plot_state["gait"].append(gait)
             for i in range(1, 9):
                 plot_state["pressures"][i].append(decoded.get(f"pressure_{i}", 0.0))
             for i in range(1, 13):
@@ -205,6 +208,7 @@ def start_udp_listener(
             "t": sim_t,
             "ankle": ankle,
             "torque": torque,
+            "gait": gait,
             "press": [decoded.get(f"pressure_{i}", 0.0) for i in range(1, 9)],
             "imu": [decoded.get(f"imu_{i}", 0.0) for i in range(1, 13)],
         }
@@ -236,11 +240,13 @@ def start_fake_data(
         torque = 5.0 * math.sin(t / 2.0)
         pressures = [500.0 + 100.0 * math.sin(t + i) for i in range(8)]
         imus = [math.sin(t + i * 0.1) for i in range(12)]
+        gait = (t % 1.0) * 100.0
 
         sample = {
             "time": t,
             "ankle_angle": ankle,
             "actual_torque": torque,
+            "gait_percentage": gait,
         }
         for i, p in enumerate(pressures, 1):
             sample[f"pressure_{i}"] = p
@@ -253,6 +259,7 @@ def start_fake_data(
             plot_state["times"].append(t)
             plot_state["ankle"].append(ankle)
             plot_state["torque"].append(torque)
+            plot_state["gait"].append(gait)
             for i, p in enumerate(pressures, 1):
                 plot_state["pressures"][i].append(p)
             for i, val in enumerate(imus, 1):
@@ -265,6 +272,7 @@ def start_fake_data(
                     "t": t,
                     "ankle": ankle,
                     "torque": torque,
+                    "gait": gait,
                     "press": pressures,
                     "imu": imus,
                 }
@@ -383,6 +391,39 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                 yaxis=dict(
                                                     range=[-60, 60],
                                                     title="Ankle Angle (deg)",
+                                                    gridcolor="#EEF1F4",
+                                                    gridwidth=2,
+                                                    zeroline=True,
+                                                    zerolinecolor="#EEF1F4",
+                                                    zerolinewidth=2,
+                                                    tickfont=dict(size=16),
+                                                ),
+                                                xaxis=dict(
+                                                    showgrid=False,
+                                                    tickfont=dict(size=16),
+                                                ),
+                                                title=None,
+                                                plot_bgcolor="rgba(0,0,0,0)",
+                                                paper_bgcolor="rgba(0,0,0,0)",
+                                                font=dict(
+                                                    family="IBM Plex Sans Condensed",
+                                                    size=18,
+                                                ),
+                                            ),
+                                        ),
+                                        config={"displayModeBar": False, "staticPlot": True},
+                                    ),
+                                    dcc.Graph(
+                                        id="gait",
+                                        style={"height": "360px"},
+                                        figure=go.Figure(
+                                            data=make_line_with_marker(
+                                                "gait_percentage", "#FF7F0E"
+                                            ),
+                                            layout=dict(
+                                                yaxis=dict(
+                                                    range=[0, 100],
+                                                    title="Gait %",
                                                     gridcolor="#EEF1F4",
                                                     gridwidth=2,
                                                     zeroline=True,
@@ -630,28 +671,30 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
     app.clientside_callback(
         """
         function(msg){
-            if(!msg){ return [null, null, null, null]; }
+            if(!msg){ return [null, null, null, null, null]; }
 
             var json_str = (typeof msg === 'string') ? msg : (msg && msg.data);
-            if(!json_str){ return [null, null, null, null]; }
+            if(!json_str){ return [null, null, null, null, null]; }
 
             var payload;
             try {
                 payload = JSON.parse(json_str);
             } catch(e){
                 console.error('failed to parse SSE payload', e); 
-                return [null, null, null, null];
+                return [null, null, null, null, null];
             }
 
             var t = payload.t;
             var ankle = payload.ankle;
             var torque = payload.torque;
+            var gait = payload.gait;
             var press = payload.press;
             var imu = payload.imu;
 
             if(!Array.isArray(t)) t = [t];
             if(!Array.isArray(ankle)) ankle = [ankle];
             if(!Array.isArray(torque)) torque = [torque];
+            if(!Array.isArray(gait)) gait = [gait];
             if(press && typeof press[0] === 'number') press = [press];
             if(imu && typeof imu[0] === 'number') imu = [imu];
 
@@ -671,12 +714,14 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
 
             var torque_payload = {x:[t], y:[torque]};
             var ankle_payload = {x:[t], y:[ankle]};
+            var gait_payload = {x:[t], y:[gait]};
             var press_payload = {x:Array(8).fill(t), y:pressT};
             var imu_payload = {x:Array(3).fill(t), y:imuT};
 
             return [
                 [torque_payload, [0], 1000],
                 [ankle_payload, [0], 1000],
+                [gait_payload, [0], 1000],
                 [press_payload, [0,2,4,6,8,10,12,14], 1000],
                 [imu_payload, [0,2,4], 1000]
             ];
@@ -684,6 +729,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         """,
         Output("torque", "extendData"),
         Output("ankle", "extendData"),
+        Output("gait", "extendData"),
         Output("press", "extendData"),
         Output("imu", "extendData"),
         Input("es", "message"),
@@ -729,6 +775,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                             "t": [s["t"] for s in batch],
                             "ankle": [s["ankle"] for s in batch],
                             "torque": [s["torque"] for s in batch],
+                            "gait": [s.get("gait", 0.0) for s in batch],
                             "press": [s["press"] for s in batch],
                             "imu": [s["imu"] for s in batch],
                         }

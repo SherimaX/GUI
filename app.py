@@ -234,8 +234,7 @@ def start_fake_data(
     """Generate synthetic samples when the Simulink host is unreachable."""
     print("Simulink host unreachable – using fake data generator")
     t = 0.0
-    # generate samples at 100 Hz to mirror the real system
-    dt = 0.01
+    dt = 0.1
     while True:
         ankle = 20.0 * math.sin(t)
         torque = 5.0 * math.sin(t / 2.0)

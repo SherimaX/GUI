@@ -33,19 +33,21 @@ body {
     padding: 10px 20px;
     border: none;
     border-radius: 20px;
-    background: #000000;
-    color: #ffffff;
+    background: #ffffff;
+    color: #000000;
     font-size: 16px;
     cursor: pointer;
     transition: background 0.2s;
 }
 
+
 .controls button:hover {
-    background: #333333;
+    background: #f0f0f0;
 }
 
+
 .controls button:active {
-    background: #222222;
+    background: #e0e0e0;
 }
 
 .controls button.on {
@@ -99,14 +101,15 @@ body {
     margin: 0 4px;
     border: none;
     border-radius: 20px;
-    background: #000000;
-    color: #ffffff;
+    background: #ffffff;
+    color: #000000;
     cursor: pointer;
     font-size: 16px;
     transition: background 0.2s, box-shadow 0.2s;
 }
+
 .tab-buttons button:hover {
-    background: #333333;
+    background: #f0f0f0;
 }
 .tab-buttons button.active {
     background: #10a37f;

@@ -264,21 +264,70 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
     )
 
     # ------------------------------------------------------------------
-    # Client-side callback: update zero-state while button is held
+    # Client-side callbacks for instantaneous button feedback
     # ------------------------------------------------------------------
+
+    # zero button behaves like a momentary switch
     app.clientside_callback(
         """
         function(n) {
-            var btn = document.getElementById('zero-btn');
-            if(btn && btn.matches(':active')) {
-                return 1;
-            }
-            return 0;
+            var active = document.getElementById('zero-btn').matches(':active');
+            return [active ? 1 : 0, active ? 'on' : ''];
         }
         """,
         Output("zero-state", "data"),
+        Output("zero-btn", "className"),
         Input("zero-interval", "n_intervals"),
         prevent_initial_call=False,
+    )
+
+
+    app.clientside_callback(
+        """
+        function(n, state){
+            if(typeof state !== 'number') state = 0;
+            if(n === undefined){ return [state, state ? 'on' : '']; }
+            var newState = 1 - state;
+            return [newState, newState ? 'on' : ''];
+        }
+        """,
+        Output("motor-state", "data"),
+        Output("motor-btn", "className"),
+        Input("motor-btn", "n_clicks"),
+        State("motor-state", "data"),
+        prevent_initial_call=True,
+    )
+
+    app.clientside_callback(
+        """
+        function(n, state){
+            if(typeof state !== 'number') state = 0;
+            if(n === undefined){ return [state, state ? 'on' : '']; }
+            var newState = 1 - state;
+            return [newState, newState ? 'on' : ''];
+        }
+        """,
+        Output("assist-state", "data"),
+        Output("assist-btn", "className"),
+        Input("assist-btn", "n_clicks"),
+        State("assist-state", "data"),
+        prevent_initial_call=True,
+    )
+
+    app.clientside_callback(
+        """
+        function(n, state){
+            if(typeof state !== 'number') state = 0;
+            if(n === undefined){ return [state, state ? 'on' : '']; }
+            var newState = 1 - state;
+            return [newState, newState ? 'on' : ''];
+        }
+        """,
+        Output("k-state", "data"),
+        Output("k-btn", "className"),
+        Input("k-btn", "n_clicks"),
+        State("k-state", "data"),
+        prevent_initial_call=True,
     )
 
     # ------------------------------------------------------------------
@@ -289,41 +338,18 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         Output("motor-btn", "className"),
         Output("assist-btn", "className"),
         Output("k-btn", "className"),
-        Output("motor-state", "data"),
-        Output("assist-state", "data"),
-        Output("k-state", "data"),
         Input("zero-state", "data"),
-        Input("motor-btn", "n_clicks"),
-        Input("assist-btn", "n_clicks"),
-        Input("k-btn", "n_clicks"),
-        State("motor-state", "data"),
-        State("assist-state", "data"),
-        State("k-state", "data"),
+        Input("motor-state", "data"),
+        Input("assist-state", "data"),
+        Input("k-state", "data"),
         prevent_initial_call=True,
     )
-    def toggle_signals(
+    def update_signals(
         zero_state: int,
-        n_motor: int,
-        n_assist: int,
-        n_k: int,
         motor_state: int,
         assist_state: int,
         k_state: int,
-    ) -> tuple[str, str, str, str, int, int, int]:
-        ctx = dash.callback_context
-        triggered = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else ""
-
-        motor_state = motor_state or 0
-        assist_state = assist_state or 0
-        k_state = k_state or 0
-
-        if triggered == "motor-btn":
-            motor_state = 1 - motor_state
-        elif triggered == "assist-btn":
-            assist_state = 1 - assist_state
-        elif triggered == "k-btn":
-            k_state = 1 - k_state
-
+    ) -> tuple[str, str, str, str]:
         send_control_packet(cfg, zero_state, motor_state, assist_state, k_state)
 
         def cls(s: int) -> str:
@@ -334,9 +360,6 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
             cls(motor_state),
             cls(assist_state),
             cls(k_state),
-            motor_state,
-            assist_state,
-            k_state,
         )
 
     # ------------------------------------------------------------------

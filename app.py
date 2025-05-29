@@ -232,6 +232,7 @@ def start_fake_data(
     while True:
         ankle = 20.0 * math.sin(t)
         torque = 5.0 * math.sin(t / 2.0)
+        pressures = [500.0 + 100.0 * math.sin(t + i) for i in range(8)]
         imus = [math.sin(t + i * 0.1) for i in range(12)]
 
         sample = {

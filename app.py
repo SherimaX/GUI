@@ -675,8 +675,8 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
             return [
                 [torque_payload, [0], 1000],
                 [ankle_payload, [0], 1000],
-                [press_payload, [0,1,2,3,4,5,6,7], 1000],
-                [imu_payload, [0,1,2], 1000]
+                [press_payload, [0,2,4,6,8,10,12,14], 1000],
+                [imu_payload, [0,2,4], 1000]
             ];
         }
         """,

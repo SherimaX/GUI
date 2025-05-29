@@ -36,6 +36,7 @@ from dash_extensions import EventSource
 import dash
 from dash import dcc, html, Input, Output, State
 import plotly.graph_objs as go
+import string  # added to use Template for JS string substitution to avoid brace-escaping issues
 
 # Consistent colors for pressure/IMU traces
 COLOR_CYCLE = [
@@ -325,37 +326,15 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         className="dashboard",
         children=[
             html.H2("AFO Dashboard"),
-            html.Div(
-                className="controls-dock",
-                children=[
-                    html.Div(
-                        className="controls",
-                        children=[
-                            html.Button("zero", id="zero-btn", n_clicks=0),
-                            html.Button("motor", id="motor-btn", n_clicks=0),
-                            html.Button("assist", id="assist-btn", n_clicks=0),
-                            html.Button("k", id="k-btn", n_clicks=0),
-                        ],
-                    )
-                ],
-        ),
             dcc.Store(id="zero-state", data=0),
             dcc.Store(id="motor-state", data=0),
             dcc.Store(id="assist-state", data=0),
             dcc.Store(id="k-state", data=0),
             html.Div(id="signal-sent", style={"display": "none"}),
             dcc.Interval(id="zero-interval", interval=100, n_intervals=0),
+            dcc.Interval(id="tab-interval", interval=1000, n_intervals=0),
             html.Div(EventSource(id="es", url="/events"), style={"display": "none"}),
             dcc.Store(id="tab-index", data=0),
-            html.Div(
-                id="tabbar",
-                className="tab-buttons",
-                children=[
-                    html.Span(id="tabHighlight", style={"transform": "translateX(0%)"}),
-                    html.Button("Angle + Torque", id="tab-angle", n_clicks=0, className="active"),
-                    html.Button("Insole", id="tab-insole", n_clicks=0),
-                ],
-        ),
             html.Div(
                 className="swipe-container",
                 children=[
@@ -574,9 +553,32 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                         ],
                     ),
                 ],
-        ),
+            ),
+            html.Div(
+                id="tab-dots",
+                style={"display": "flex", "justifyContent": "center", "alignItems": "center", "marginTop": "0px", "marginBottom": "0px"},
+                children=[
+                    html.Span(className="tab-dot", id="dot-0"),
+                    html.Span(className="tab-dot", id="dot-1"),
+                ],
+            ),
+            html.Div(
+                className="controls-dock",
+                style={"marginTop": "100px"},
+                children=[
+                    html.Div(
+                        className="controls",
+                        children=[
+                            html.Button("zero", id="zero-btn", n_clicks=0),
+                            html.Button("motor", id="motor-btn", n_clicks=0),
+                            html.Button("assist", id="assist-btn", n_clicks=0),
+                            html.Button("k", id="k-btn", n_clicks=0),
+                        ],
+                    )
+                ],
+            ),
         ],
-        )
+    )
 
     # ------------------------------------------------------------------
     # Client-side callbacks for instantaneous button feedback
@@ -645,45 +647,6 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         prevent_initial_call=True,
         )
 
-    app.clientside_callback(
-        """
-        function(n0, n1, idx){
-            var ctx = dash_clientside.callback_context;
-            if(typeof idx !== 'number') idx = 0;
-            if(ctx.triggered.length){
-                var id = ctx.triggered[0].prop_id.split('.')[0];
-                if(id === 'tab-angle'){ idx = 0; }
-                else if(id === 'tab-insole'){ idx = 1; }
-            }
-            var cont = document.querySelector('.swipe-container');
-            var highlight = document.getElementById('tabHighlight');
-            var offset = 0;
-            if(cont){
-                var width = cont.clientWidth;
-                cont.scrollTo({left: width * idx, behavior: 'smooth'});
-                if(highlight){
-                    var tabWidth = width / 2;
-                    offset = idx * tabWidth;
-                }
-            }
-            return [
-                idx,
-                idx===0 ? 'active' : '',
-                idx===1 ? 'active' : '',
-                {transform: 'translateX(' + offset + 'px)'}
-            ];
-        }
-        """,
-        Output("tab-index", "data"),
-        Output("tab-angle", "className"),
-        Output("tab-insole", "className"),
-        Output("tabHighlight", "style"),
-        Input("tab-angle", "n_clicks"),
-        Input("tab-insole", "n_clicks"),
-        State("tab-index", "data"),
-        prevent_initial_call=False,
-        )
-
     # ------------------------------------------------------------------
     # Callback: send control packet when signal states change
     # ------------------------------------------------------------------
@@ -707,21 +670,20 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
     # ------------------------------------------------------------------
     # Client-side callback: Update graphs for each SSE batch
     # ------------------------------------------------------------------
-    app.clientside_callback(
-        """
-        function(msg){{
-            if(!msg){{ return [null, null, null, null, null]; }}
+    graph_update_js = string.Template(r"""
+        function(msg){
+            if(!msg){ return [null, null, null, null, null]; }
 
             var json_str = (typeof msg === 'string') ? msg : (msg && msg.data);
-            if(!json_str){{ return [null, null, null, null, null]; }}
+            if(!json_str){ return [null, null, null, null, null]; }
 
             var payload;
-            try {{
+            try {
                 payload = JSON.parse(json_str);
-            }} catch(e){{
+            } catch(e){
                 console.error('failed to parse SSE payload', e);
                 return [null, null, null, null, null];
-            }}
+            }
 
             var t = payload.t;
             var ankle = payload.ankle;
@@ -737,35 +699,53 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
             if(press && typeof press[0] === 'number') press = [press];
             if(imu && typeof imu[0] === 'number') imu = [imu];
 
-            var pressT = Array.from({{length:8}}, () => []);
-            for(var i=0;i<press.length;i++){{
-                for(var j=0;j<8;j++){{
+            var pressT = Array.from({length:8}, () => []);
+            for(var i=0;i<press.length;i++){
+                for(var j=0;j<8;j++){
                     pressT[j].push(press[i][j]);
-                }}
-            }}
+                }
+            }
 
-            var imuT = Array.from({{length:3}}, () => []);
-            for(var i=0;i<imu.length;i++){{
-                for(var j=0;j<3;j++){{
+            var imuT = Array.from({length:3}, () => []);
+            for(var i=0;i<imu.length;i++){
+                for(var j=0;j<3;j++){
                     imuT[j].push(imu[i][j]);
-                }}
-            }}
+                }
+            }
 
-            var torque_payload = {{x:[t], y:[torque]}};
-            var ankle_payload = {{x:[t], y:[ankle]}};
-            var gait_payload = {{x:[t], y:[gait]}};
-            var press_payload = {{x:Array(8).fill(t), y:pressT}};
-            var imu_payload = {{x:Array(3).fill(t), y:imuT}};
+            var torque_payload = {x:[t], y:[torque]};
+            var ankle_payload = {x:[t], y:[ankle]};
+            var gait_payload = {x:[t], y:[gait]};
+            var press_payload = {x:Array(8).fill(t), y:pressT};
+            var imu_payload = {x:Array(3).fill(t), y:imuT};
+
+            // Slide x-axis window to show only the last 10 seconds
+            var latestT = t[t.length - 1];
+            if(typeof latestT !== 'number') latestT = Number(latestT);
+            var xrange = [latestT - 10.0, latestT];
+
+            // Apply relayout on each graph individually (if already rendered)
+            ['torque', 'ankle', 'gait', 'press', 'imu'].forEach(function(id) {
+                var gd = document.getElementById(id);
+                if(gd) {
+                    try {
+                        Plotly.relayout(gd, {'xaxis.range': xrange});
+                    } catch(e) { /* ignore before initial render */ }
+                }
+            });
 
             return [
-                [torque_payload, [0], {max_points}],
-                [ankle_payload, [0], {max_points}],
-                [gait_payload, [0], {max_points}],
-                [press_payload, [0,2,4,6,8,10,12,14], {max_points}],
-                [imu_payload, [0,2,4], {max_points}]
+                [torque_payload, [0], ${max_points}],
+                [ankle_payload, [0], ${max_points}],
+                [gait_payload, [0], ${max_points}],
+                [press_payload, [0,2,4,6,8,10,12,14], ${max_points}],
+                [imu_payload, [0,2,4], ${max_points}]
             ];
-        }}
-        """.format(max_points=max_points),
+        }
+        """).substitute(max_points=max_points)
+
+    app.clientside_callback(
+        graph_update_js,
         Output("torque", "extendData"),
         Output("ankle", "extendData"),
         Output("gait", "extendData"),
@@ -835,6 +815,40 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
 
         return Response(generate(), mimetype="text/event-stream")
 
+    # Add a clientside callback to update the tab-index based on scroll position
+    app.clientside_callback(
+        '''
+        function(n_intervals) {
+            var swipe = document.querySelector('.swipe-container');
+            if (!swipe) return window.dash_clientside.no_update;
+            if (!swipe._dotScrollHandlerAttached) {
+                swipe.addEventListener('scroll', function() {
+                    var idx = Math.round(swipe.scrollLeft / swipe.clientWidth);
+                    var dots = [document.getElementById('dot-0'), document.getElementById('dot-1')];
+                    for (var i = 0; i < dots.length; ++i) {
+                        if (dots[i]) {
+                            dots[i].className = 'tab-dot' + (i === idx ? ' active' : '');
+                        }
+                    }
+                });
+                swipe._dotScrollHandlerAttached = true;
+            }
+            // Set initial state
+            var idx = Math.round(swipe.scrollLeft / swipe.clientWidth);
+            var dots = [document.getElementById('dot-0'), document.getElementById('dot-1')];
+            for (var i = 0; i < dots.length; ++i) {
+                if (dots[i]) {
+                    dots[i].className = 'tab-dot' + (i === idx ? ' active' : '');
+                }
+            }
+            return window.dash_clientside.no_update;
+        }
+        ''',
+        Output('tab-index', 'data'),
+        Input('zero-interval', 'n_intervals'),
+        prevent_initial_call=False,
+    )
+
     return app
 
 
@@ -859,6 +873,25 @@ if __name__ == "__main__":
         daemon=True,
         )
     listener_t.start()
+
+    # ------------------------------------------------------------------
+    # Debug helper: every 10 s print the time stamps currently in the plot
+    # ------------------------------------------------------------------
+
+    def _debug_print_times():
+        while True:
+            time.sleep(10)
+            with plot_lock:
+                times_snapshot = list(plot_state["times"])
+            if times_snapshot:
+                print(
+                    f"[DEBUG] Plot time range: {times_snapshot[0]:.2f}s → {times_snapshot[-1]:.2f}s "
+                    f"({len(times_snapshot)} samples)"
+                )
+            else:
+                print("[DEBUG] Plot time buffer is empty")
+
+    threading.Thread(target=_debug_print_times, daemon=True).start()
 
     dash_app = build_dash_app(cfg, data_queue)
     dash_app.run(

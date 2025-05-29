@@ -26,6 +26,9 @@ button {
     margin-bottom: 20px;
     background: #f7f7f8;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 50%;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .controls {
@@ -34,7 +37,9 @@ button {
 }
 
 .controls button {
-    padding: 10px 20px;
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 10px 0;
     border: 1px solid #cccccc;
     border-radius: 20px;
     background: #ffffff;
@@ -42,13 +47,12 @@ button {
     font-size: 16px;
     cursor: pointer;
     transition: background 0.2s, transform 0.1s;
+    margin: 0 4px;
 }
-
 
 .controls button:hover {
     background: #f0f0f0;
 }
-
 
 .controls button:active {
     background: #e0e0e0;
@@ -80,7 +84,7 @@ button {
     padding: 10px;
     border-radius: 12px;
     background: #ffffff;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px 0 rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04);
     height: 380px; /* 10px padding around a 360px plot */
 }
 @media (max-width: 1024px) {
@@ -96,64 +100,51 @@ button {
     display: none;
 }
 
-# The tab bar containing the pill highlight
 .tab-buttons {
     position: relative;
     display: flex;
-    overflow: hidden;
     margin: 0 auto 10px;
-    width: 80%;
+    width: auto;
+    max-width: 340px;
+    min-width: 200px;
     border-radius: 9999px;
     border: 1px solid #E5E7EB;
     background: #ffffff;
-}
-
-# Sliding pill used to indicate the active tab
-# Width reduced to ~25% to match request
-# Position will be controlled via transform from callbacks/JS
-# so only the width is defined here
-# (the "inset: 0" ensures the pill stays within the tab bar)
-# Sliding pill used to indicate the active tab
-# Now spans the full width of a tab so it remains visible when selected
-# The element is positioned absolutely and does not intercept pointer events
-# (handled by the buttons above it).
-#tabHighlight {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    width: 50%;
-    border-radius: inherit;
-    background: #1f2937;
-    pointer-events: none;
-    transition: transform .25s ease;
+    justify-content: center;
+    align-items: center;
 }
 
 .tab-buttons button {
     flex: 1 1 0;
     position: relative;
     z-index: 1;
-    padding: 8px 16px;
+    padding: 6px 18px;
     border: none;
     background: none;
     color: #4b5563;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 15px;
+    min-width: 80px;
+    max-width: 140px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .tab-buttons button.active {
-    color: #ffffff;
+    color: #111;
 }
 
 .swipe-container {
     display: flex;
-    overflow-x: hidden; /* disable manual swipe */
-    scroll-snap-type: none;
-    width: 80%;
-    margin: 0 auto;
-    padding: 0 20px; /* extra padding to hide next page */
-    scrollbar-width: none; /* hide scrollbar in Firefox */
-    -ms-overflow-style: none; /* hide scrollbar in IE/Edge */
+    overflow-x: auto;
+    overflow-y: visible;
+    scroll-snap-type: x mandatory;
+    width: 90%;
+    margin: 24px auto 24px auto;
+    padding: 0;
+    box-sizing: border-box;
 }
 .swipe-container::-webkit-scrollbar {
     display: none; /* hide scrollbar in Chrome/Safari */
@@ -162,12 +153,12 @@ button {
 .swipe-page {
     flex: 0 0 100%;
     scroll-snap-align: start;
-    padding: 20px;
+    padding: 2%;
     background: #ffffff;
     border-radius: 16px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
     margin-bottom: 10px;
     box-sizing: border-box;
+    /* No left/right margin, let shadow overflow naturally */
 }
 
 /* Leave space between pages so their shadows are not clipped */
@@ -178,5 +169,21 @@ button {
 .js-plotly-plot .scatterlayer .js-line {
     /* Base glow in case JS fails */
     filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.125));
+}
+
+/* Tab indicator dots for swipe navigation */
+.tab-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1.5px solid #bbb;
+    background: transparent;
+    margin: 0 5px;
+    transition: background 0.2s, border-color 0.2s;
+}
+.tab-dot.active {
+    background: #555;
+    border-color: #555;
 }
 

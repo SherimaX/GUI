@@ -209,6 +209,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
             dcc.Store(id="motor-state", data=0),
             dcc.Store(id="assist-state", data=0),
             dcc.Store(id="k-state", data=0),
+            html.Div(id="signal-sent", style={"display": "none"}),
             dcc.Interval(id="zero-interval", interval=100, n_intervals=0),
             EventSource(id="es", url="/events", style={"display": "none"}),
             html.Div(
@@ -340,13 +341,10 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
     )
 
     # ------------------------------------------------------------------
-    # Callback: Toggle control signals & send packet
+    # Callback: send control packet when signal states change
     # ------------------------------------------------------------------
     @app.callback(
-        Output("zero-btn", "className"),
-        Output("motor-btn", "className"),
-        Output("assist-btn", "className"),
-        Output("k-btn", "className"),
+        Output("signal-sent", "children"),
         Input("zero-state", "data"),
         Input("motor-state", "data"),
         Input("assist-state", "data"),
@@ -358,18 +356,9 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         motor_state: int,
         assist_state: int,
         k_state: int,
-    ) -> tuple[str, str, str, str]:
+    ) -> str:
         send_control_packet(cfg, zero_state, motor_state, assist_state, k_state)
-
-        def cls(s: int) -> str:
-            return "on" if s else ""
-
-        return (
-            cls(zero_state),
-            cls(motor_state),
-            cls(assist_state),
-            cls(k_state),
-        )
+        return ""
 
     # ------------------------------------------------------------------
     # Callback: Update graphs on *each* SSE message (near real-time)

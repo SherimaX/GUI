@@ -70,6 +70,7 @@ def start_udp_listener(cfg: Dict[str, Any], buffer: Deque[Dict[str, float]]) -> 
     last_flush_wall: float = time.time()
 
     packets_rcvd = 0
+    last_status = time.time()
 
     with open(LOG_FILE, "w", encoding="utf-8") as f:
         f.write(",".join(HEADER_FIELDS) + "\n")
@@ -106,9 +107,11 @@ def start_udp_listener(cfg: Dict[str, Any], buffer: Deque[Dict[str, float]]) -> 
             with open(LOG_FILE, "w", encoding="utf-8") as f:
                 f.write(",".join(HEADER_FIELDS) + "\n")
                 f.write("\n".join(csv_buffer))
-
-        if packets_rcvd % 100 == 0:
-            print(f"[listener] Received {packets_rcvd} packets – csv rows {len(csv_buffer)}")
+        if now_wall - last_status >= 10.0:
+            last_status = now_wall
+            print(
+                f"[listener] Received {packets_rcvd} packets – csv rows {len(csv_buffer)}"
+            )
 
 
 # --------------------------------------------------------------------------------------

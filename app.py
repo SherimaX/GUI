@@ -142,6 +142,7 @@ def start_udp_listener(
     sock.setblocking(True)
     sock.settimeout(1.0)  # add right after sock.setblocking(True)
     packets_rcvd = 0  # counter
+    last_status = time.time()
     print(
         f"Listening for data on {cfg['udp']['listen_host']}:{cfg['udp']['listen_port']}"
     )
@@ -191,9 +192,13 @@ def start_udp_listener(
         }
         try:
             event_q.put_nowait(sample)
-            if packets_rcvd % 100 == 0:
-                # Every 100 packets give a small hint that data flows.
-                print(f"Enqueued {packets_rcvd} samples. Queue size: {event_q.qsize()}")
+            now = time.time()
+            if now - last_status >= 10.0:
+                # Periodic hint that data is flowing
+                print(
+                    f"Enqueued {packets_rcvd} samples. Queue size: {event_q.qsize()}"
+                )
+                last_status = now
         except Exception:
             # queue full – drop sample to avoid blocking UDP thread
             pass

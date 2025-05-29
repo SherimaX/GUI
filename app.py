@@ -211,7 +211,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
             dcc.Store(id="k-state", data=0),
             html.Div(id="signal-sent", style={"display": "none"}),
             dcc.Interval(id="zero-interval", interval=100, n_intervals=0),
-            EventSource(id="es", url="/events", style={"display": "none"}),
+            html.Div(EventSource(id="es", url="/events"), style={"display": "none"}),
             html.Div(
                 className="plots",
                 children=[

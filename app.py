@@ -656,15 +656,21 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                 else if(id === 'tab-insole'){ idx = 1; }
             }
             var cont = document.querySelector('.swipe-container');
+            var highlight = document.getElementById('tabHighlight');
+            var offset = 0;
             if(cont){
                 var width = cont.clientWidth;
                 cont.scrollTo({left: width * idx, behavior: 'smooth'});
+                if(highlight){
+                    var tabWidth = width / 2;
+                    offset = idx * tabWidth + (tabWidth - highlight.offsetWidth)/2;
+                }
             }
             return [
                 idx,
                 idx===0 ? 'active' : '',
                 idx===1 ? 'active' : '',
-                {transform: 'translateX(' + (idx*100) + '%)'}
+                {transform: 'translateX(' + offset + 'px)'}
             ];
         }
         """,

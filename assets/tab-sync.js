@@ -8,7 +8,9 @@
         var idx = Math.round(cont.scrollLeft / cont.clientWidth);
         if(idx < 0){ idx = 0; }
         if(idx > 1){ idx = 1; }
-        highlight.style.transform = 'translateX(' + (idx*100) + '%)';
+        var tabWidth = cont.clientWidth / 2;
+        var offset = idx * tabWidth + (tabWidth - highlight.offsetWidth)/2;
+        highlight.style.transform = 'translateX(' + offset + 'px)';
         angleBtn.classList.toggle('active', idx === 0);
         insoleBtn.classList.toggle('active', idx === 1);
     }
@@ -18,5 +20,6 @@
         cont.addEventListener('scroll', function(){
             window.requestAnimationFrame(updateFromScroll);
         });
+        updateFromScroll();
     });
 })();

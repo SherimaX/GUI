@@ -320,7 +320,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                         style={"height": "360px"},
                                         figure=go.Figure(
                                             data=[
-                                                go.Scatter(
+                                                go.Scattergl(
                                                     x=[],
                                                     y=[],
                                                     mode="lines",
@@ -359,7 +359,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                         style={"height": "360px"},
                                         figure=go.Figure(
                                             data=[
-                                                go.Scatter(
+                                                go.Scattergl(
                                                     x=[],
                                                     y=[],
                                                     mode="lines",
@@ -408,7 +408,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                         style={"height": "360px"},
                                         figure=go.Figure(
                                             data=[
-                                                go.Scatter(
+                                                go.Scattergl(
                                                     x=[],
                                                     y=[],
                                                     mode="lines",
@@ -459,7 +459,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                         style={"height": "360px"},
                                         figure=go.Figure(
                                             data=[
-                                                go.Scatter(
+                                                go.Scattergl(
                                                     x=[],
                                                     y=[],
                                                     mode="lines",
@@ -623,9 +623,63 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         return ""
 
     # ------------------------------------------------------------------
-    # Callback: Update graphs on *each* SSE message (near real-time)
+    # Client-side callback: Update graphs for each SSE batch
     # ------------------------------------------------------------------
-    @app.callback(
+    app.clientside_callback(
+        """
+        function(msg){
+            if(!msg){ return [null, null, null, null]; }
+
+            var json_str = (typeof msg === 'string') ? msg : (msg && msg.data);
+            if(!json_str){ return [null, null, null, null]; }
+
+            var payload;
+            try {
+                payload = JSON.parse(json_str);
+            } catch(e){
+                console.error('failed to parse SSE payload', e); 
+                return [null, null, null, null];
+            }
+
+            var t = payload.t;
+            var ankle = payload.ankle;
+            var torque = payload.torque;
+            var press = payload.press;
+            var imu = payload.imu;
+
+            if(!Array.isArray(t)) t = [t];
+            if(!Array.isArray(ankle)) ankle = [ankle];
+            if(!Array.isArray(torque)) torque = [torque];
+            if(press && typeof press[0] === 'number') press = [press];
+            if(imu && typeof imu[0] === 'number') imu = [imu];
+
+            var pressT = Array.from({length:8}, () => []);
+            for(var i=0;i<press.length;i++){
+                for(var j=0;j<8;j++){
+                    pressT[j].push(press[i][j]);
+                }
+            }
+
+            var imuT = Array.from({length:3}, () => []);
+            for(var i=0;i<imu.length;i++){
+                for(var j=0;j<3;j++){
+                    imuT[j].push(imu[i][j]);
+                }
+            }
+
+            var torque_payload = {x:[t], y:[torque]};
+            var ankle_payload = {x:[t], y:[ankle]};
+            var press_payload = {x:Array(8).fill(t), y:pressT};
+            var imu_payload = {x:Array(3).fill(t), y:imuT};
+
+            return [
+                [torque_payload, [0], 1000],
+                [ankle_payload, [0], 1000],
+                [press_payload, [0,1,2,3,4,5,6,7], 1000],
+                [imu_payload, [0,1,2], 1000]
+            ];
+        }
+        """,
         Output("torque", "extendData"),
         Output("ankle", "extendData"),
         Output("press", "extendData"),
@@ -633,84 +687,6 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         Input("es", "message"),
         prevent_initial_call=True,
     )
-    def push_batch(msg):
-        """Handle SSE messages that contain batched samples."""
-
-        if msg is None:
-            raise dash.exceptions.PreventUpdate
-
-        # dash-extensions >=0.1.5 passes the raw string, earlier versions wrap
-        # it in a dict under "data".
-        if isinstance(msg, str):
-            json_str = msg
-        elif isinstance(msg, dict) and "data" in msg:
-            json_str = msg["data"]
-        else:
-            # Unexpected format; skip update.
-            print(f"Unknown SSE message format: {type(msg)} -> {msg}")
-            raise dash.exceptions.PreventUpdate
-
-        try:
-            payload = json.loads(json_str)
-        except json.JSONDecodeError:
-            print(f"Failed to decode JSON from SSE: {json_str[:100]}")
-            raise dash.exceptions.PreventUpdate
-
-        times = payload.get("t", [])
-        ankles = payload.get("ankle", [])
-        torques = payload.get("torque", [])
-        pressures = payload.get("press", [])
-        imus = payload.get("imu", [])
-
-        if not isinstance(times, list):
-            times = [times]
-        if not isinstance(ankles, list):
-            ankles = [ankles]
-        if not isinstance(torques, list):
-            torques = [torques]
-        if pressures and isinstance(pressures[0], (int, float)):
-            pressures = [pressures]
-        if imus and isinstance(imus[0], (int, float)):
-            imus = [imus]
-
-        if len(plot_state["times"]) < 5:
-            print(f"push_batch first payload → count={len(times)}")
-
-        torque_payload = dict(x=[times], y=[torques])
-        ankle_payload = dict(x=[times], y=[ankles])
-
-        # transpose pressures -> 8 traces
-        transposed = list(zip(*pressures)) if pressures else [[] for _ in range(8)]
-        press_payload = dict(
-            x=[times for _ in range(8)],
-            y=[list(tr) for tr in transposed],
-        )
-
-        transposed_imu = list(zip(*imus)) if imus else [[] for _ in range(3)]
-        transposed_imu = transposed_imu[:3]
-        imu_payload = dict(
-            x=[times for _ in range(3)],
-            y=[list(tr) for tr in transposed_imu],
-        )
-
-        # dcc.Graph.extendData expects a tuple of (data, trace_indices, max_points)
-        return (
-            torque_payload,
-            [0],
-            1000,
-        ), (
-            ankle_payload,
-            [0],
-            1000,
-        ), (
-            press_payload,
-            list(range(8)),
-            1000,
-        ), (
-            imu_payload,
-            list(range(3)),
-            1000,
-        )
 
     # ------------------------------------------------------------------
     # SSE endpoint: /events  (one single connection per browser client)

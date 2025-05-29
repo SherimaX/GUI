@@ -11,6 +11,10 @@ body {
     margin: 0;
 }
 
+button {
+    border: 1px solid #cccccc;
+}
+
 .dashboard h2 {
     text-align: center;
     font-family: 'Inter', sans-serif;
@@ -31,7 +35,7 @@ body {
 
 .controls button {
     padding: 10px 20px;
-    border: none;
+    border: 1px solid #cccccc;
     border-radius: 20px;
     background: #ffffff;
     color: #000000;
@@ -102,7 +106,7 @@ body {
     flex: 1 1 50%;
     padding: 8px 16px;
     margin: 0 4px;
-    border: none;
+    border: 1px solid #cccccc;
     border-radius: 20px;
     background: #ffffff;
     color: #000000;

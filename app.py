@@ -5,6 +5,7 @@ Features implemented:
 1. Toggle four control signals via buttons, sending a 4‑float packet.
 2. Live chart of `ankle_angle` (y-range −60…+60 deg).
 3. Live chart of the 8 plantar pressure signals (shared axis 0…1000 N).
+4. Live chart of actual torque and the first six IMU channels.
 
 Run:
     python app.py  # then open http://127.0.0.1:8050 in a browser
@@ -45,7 +46,9 @@ plot_lock = threading.Lock()
 plot_state: Dict[str, Any] = {
     "times": collections.deque(maxlen=1000),
     "ankle": collections.deque(maxlen=1000),
+    "torque": collections.deque(maxlen=1000),
     "pressures": {i: collections.deque(maxlen=1000) for i in range(1, 9)},
+    "imus": {i: collections.deque(maxlen=1000) for i in range(1, 7)},
 }
 
 # Queue for server-sent events (SSE) to push fresh samples to the browser
@@ -131,14 +134,18 @@ def start_udp_listener(
         # Extract fields for logging and plotting
         sim_t = decoded.get("time", decoded.get("Time", 0.0))
         ankle = decoded.get("ankle_angle", 0.0)
+        torque = decoded.get("actual_torque", 0.0)
         buffer.append(decoded)
 
         # Update in-memory plots
         with plot_lock:
             plot_state["times"].append(sim_t)
             plot_state["ankle"].append(ankle)
+            plot_state["torque"].append(torque)
             for i in range(1, 9):
                 plot_state["pressures"][i].append(decoded.get(f"pressure_{i}", 0.0))
+            for i in range(1, 7):
+                plot_state["imus"][i].append(decoded.get(f"imu_{i}", 0.0))
 
         # Append to CSV every 0.01 s of simulation time
         if sim_t is not None and (
@@ -154,7 +161,9 @@ def start_udp_listener(
         sample = {
             "t": sim_t,
             "ankle": ankle,
+            "torque": torque,
             "press": [decoded.get(f"pressure_{i}", 0.0) for i in range(1, 9)],
+            "imu": [decoded.get(f"imu_{i}", 0.0) for i in range(1, 7)],
         }
         try:
             event_q.put_nowait(sample)
@@ -216,6 +225,26 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                 className="plots",
                 children=[
                     dcc.Graph(
+                        id="torque",
+                        figure=go.Figure(
+                            data=[go.Scatter(x=[], y=[], mode="lines", name="actual_torque")],
+                            layout=dict(
+                                yaxis=dict(
+                                    range=[-5, 15],
+                                    title="Actual Torque",
+                                    gridcolor="#cccccc",
+                                    tickfont=dict(size=16),
+                                ),
+                                xaxis=dict(gridcolor="#cccccc", tickfont=dict(size=16)),
+                                title=None,
+                                plot_bgcolor="rgba(0,0,0,0)",
+                                paper_bgcolor="rgba(0,0,0,0)",
+                                font=dict(family="IBM Plex Sans Condensed", size=18),
+                            ),
+                        ),
+                        config={"displayModeBar": False, "staticPlot": True},
+                    ),
+                    dcc.Graph(
                         id="ankle",
                         figure=go.Figure(
                             data=[
@@ -260,6 +289,31 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                     xanchor="left",
                                     x=0,
                                 ),
+                                margin=dict(t=60),
+                                plot_bgcolor="rgba(0,0,0,0)",
+                                paper_bgcolor="rgba(0,0,0,0)",
+                                font=dict(family="IBM Plex Sans Condensed", size=18),
+                            ),
+                        ),
+                        config={"displayModeBar": False, "staticPlot": True},
+                    ),
+                    dcc.Graph(
+                        id="imu",
+                        figure=go.Figure(
+                            data=[
+                                go.Scatter(x=[], y=[], mode="lines", name=f"imu_{i}")
+                                for i in range(1, 7)
+                            ],
+                            layout=dict(
+                                yaxis=dict(
+                                    range=[-3, 3],
+                                    title="IMU",
+                                    gridcolor="#cccccc",
+                                    tickfont=dict(size=16),
+                                ),
+                                xaxis=dict(gridcolor="#cccccc", tickfont=dict(size=16)),
+                                title=None,
+                                legend=dict(orientation="h"),
                                 margin=dict(t=60),
                                 plot_bgcolor="rgba(0,0,0,0)",
                                 paper_bgcolor="rgba(0,0,0,0)",
@@ -364,8 +418,10 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
     # Callback: Update graphs on *each* SSE message (near real-time)
     # ------------------------------------------------------------------
     @app.callback(
+        Output("torque", "extendData"),
         Output("ankle", "extendData"),
         Output("press", "extendData"),
+        Output("imu", "extendData"),
         Input("es", "message"),
         prevent_initial_call=True,
     )
@@ -394,18 +450,25 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
 
         times = payload.get("t", [])
         ankles = payload.get("ankle", [])
+        torques = payload.get("torque", [])
         pressures = payload.get("press", [])
+        imus = payload.get("imu", [])
 
         if not isinstance(times, list):
             times = [times]
         if not isinstance(ankles, list):
             ankles = [ankles]
+        if not isinstance(torques, list):
+            torques = [torques]
         if pressures and isinstance(pressures[0], (int, float)):
             pressures = [pressures]
+        if imus and isinstance(imus[0], (int, float)):
+            imus = [imus]
 
         if len(plot_state["times"]) < 5:
             print(f"push_batch first payload → count={len(times)}")
 
+        torque_payload = dict(x=[times], y=[torques])
         ankle_payload = dict(x=[times], y=[ankles])
 
         # transpose pressures -> 8 traces
@@ -415,14 +478,28 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
             y=[list(tr) for tr in transposed],
         )
 
+        transposed_imu = list(zip(*imus)) if imus else [[] for _ in range(6)]
+        imu_payload = dict(
+            x=[times for _ in range(6)],
+            y=[list(tr) for tr in transposed_imu],
+        )
+
         # dcc.Graph.extendData expects a tuple of (data, trace_indices, max_points)
         return (
+            torque_payload,
+            [0],
+            1000,
+        ), (
             ankle_payload,
             [0],
             1000,
         ), (
             press_payload,
             list(range(8)),
+            1000,
+        ), (
+            imu_payload,
+            list(range(6)),
             1000,
         )
 
@@ -459,7 +536,9 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                     payload = {
                         "t": [s["t"] for s in batch],
                         "ankle": [s["ankle"] for s in batch],
+                        "torque": [s["torque"] for s in batch],
                         "press": [s["press"] for s in batch],
+                        "imu": [s["imu"] for s in batch],
                     }
                     batch.clear()
                     yield f"data:{json.dumps(payload)}\n\n"

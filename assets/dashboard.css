@@ -68,7 +68,7 @@ body {
     border-radius: 12px;
     background: transparent;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
-    height: 380px; /* bigger to avoid clipping the shadow */
+    height: 380px; /* 10px padding around a 360px plot */
 }
 @media (max-width: 1024px) {
     .plots {
@@ -91,15 +91,24 @@ body {
 
 .tab-buttons button {
     flex: 1 1 50%;
-    padding: 8px 12px;
-    border: none;
-    background: #ddd;
+    padding: 10px 16px;
+    margin: 0 4px;
+    border: 1px solid transparent;
+    border-radius: 20px;
+    background: #f2f3f5;
     cursor: pointer;
     font-size: 16px;
+    transition: background 0.2s, box-shadow 0.2s;
+}
+
+.tab-buttons button:hover {
+    background: #e4e5e7;
 }
 
 .tab-buttons button.active {
-    background: #bbb;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border-color: #ccc;
 }
 
 .swipe-container {
@@ -117,5 +126,10 @@ body {
 .swipe-page {
     flex: 0 0 100%;
     scroll-snap-align: start;
+    padding: 20px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    margin-bottom: 10px;
 }
 

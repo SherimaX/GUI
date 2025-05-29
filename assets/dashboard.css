@@ -147,6 +147,6 @@ body {
 
 .js-plotly-plot .scatterlayer .js-line {
     /* Base glow in case JS fails */
-    filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.25));
+    filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.125));
 }
 

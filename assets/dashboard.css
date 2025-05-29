@@ -34,7 +34,15 @@
 }
 
 .controls button.on {
-    background: lightgreen;
+    background: linear-gradient(#b7ffb7, #93ee93);
+}
+
+.controls button.on:hover {
+    background: linear-gradient(#ccffcc, #a8f0a8);
+}
+
+.controls button.on:active {
+    background: linear-gradient(#93ee93, #7ccc7c);
 }
 .plots {
     display: flex;

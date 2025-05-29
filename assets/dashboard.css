@@ -113,20 +113,19 @@ button {
 # Position will be controlled via transform from callbacks/JS
 # so only the width is defined here
 # (the "inset: 0" ensures the pill stays within the tab bar)
-# 25% keeps the pill noticeably smaller than a full tab
-# while remaining responsive.
-#
-# style tuned according to user request
-#   - width: 25% of the tab bar
-#   - same border radius and transition as before
+# Sliding pill used to indicate the active tab
+# Now spans the full width of a tab so it remains visible when selected
+# The element is positioned absolutely and does not intercept pointer events
+# (handled by the buttons above it).
 #tabHighlight {
     position: absolute;
     top: 0;
     bottom: 0;
     left: 0;
-    width: 25%;
+    width: 50%;
     border-radius: inherit;
     background: #1f2937;
+    pointer-events: none;
     transition: transform .25s ease;
 }
 
@@ -152,7 +151,7 @@ button {
     scroll-snap-type: none;
     width: 80%;
     margin: 0 auto;
-    padding: 0 10px; /* prevent shadow clipping */
+    padding: 0 20px; /* extra padding to hide next page */
     scrollbar-width: none; /* hide scrollbar in Firefox */
     -ms-overflow-style: none; /* hide scrollbar in IE/Edge */
 }
@@ -169,6 +168,11 @@ button {
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
     margin-bottom: 10px;
     box-sizing: border-box;
+}
+
+/* Leave space between pages so their shadows are not clipped */
+.swipe-page:not(:last-child) {
+    margin-right: 40px;
 }
 
 .js-plotly-plot .scatterlayer .js-line {

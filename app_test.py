@@ -85,10 +85,9 @@ def update_figures(_):  # noqa: D401
         go.Scatter(
             x=times,
             y=df["ankle_angle"],
-            mode="lines+markers",
+            mode="lines",
             name="ankle_angle",
             line=dict(width=3, color="#0B74FF"),
-            marker=dict(symbol="circle", size=6),
         )
     )
     fig_ankle.update_yaxes(
@@ -121,10 +120,9 @@ def update_figures(_):  # noqa: D401
                 go.Scatter(
                     x=times,
                     y=df[key],
-                    mode="lines+markers",
+                    mode="lines",
                     name=key,
                     line=dict(width=3, color=color),
-                    marker=dict(symbol="circle", size=6),
                 )
             )
     fig_press.update_yaxes(

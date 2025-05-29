@@ -7,13 +7,13 @@ function applyGlow() {
         if (stroke.startsWith('rgb')) {
             const nums = stroke.match(/\d+/g);
             if (nums && nums.length >= 3) {
-                glow = `rgba(${nums[0]}, ${nums[1]}, ${nums[2]}, 0.35)`;
+                glow = `rgba(${nums[0]}, ${nums[1]}, ${nums[2]}, 0.175)`;
             }
         } else if (stroke.startsWith('#') && stroke.length === 7) {
             const r = parseInt(stroke.slice(1,3), 16);
             const g = parseInt(stroke.slice(3,5), 16);
             const b = parseInt(stroke.slice(5,7), 16);
-            glow = `rgba(${r}, ${g}, ${b}, 0.35)`;
+            glow = `rgba(${r}, ${g}, ${b}, 0.175)`;
         }
         el.style.filter = `drop-shadow(0 0 6px ${glow})`;
     });

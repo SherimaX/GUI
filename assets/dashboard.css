@@ -1,23 +1,27 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
 
 .dashboard {
     padding: 10px;
 }
 
 body {
-    background: transparent;
-    font-family: 'IBM Plex Sans Condensed', sans-serif;
+    background: #ffffff;
+    font-family: 'Inter', sans-serif;
+    color: #333333;
+    margin: 0;
 }
 
 .dashboard h2 {
     text-align: center;
-    font-family: 'IBM Plex Sans Condensed', sans-serif;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
 }
 .controls-dock {
     padding: 10px;
     border-radius: 12px;
     margin-bottom: 20px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+    background: #f7f7f8;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .controls {
@@ -27,33 +31,33 @@ body {
 
 .controls button {
     padding: 10px 20px;
-    border: 1px solid #bbb;
-    border-radius: 12px;
-    background: linear-gradient(#f5f5f5, #e0e0e0);
-    box-shadow: none;
+    border: none;
+    border-radius: 6px;
+    background: #10a37f;
+    color: #ffffff;
     font-size: 16px;
     cursor: pointer;
-    transition: none;
+    transition: background 0.2s;
 }
 
 .controls button:hover {
-    background: linear-gradient(#ffffff, #e8e8e8);
+    background: #0e8b72;
 }
 
 .controls button:active {
-    background: linear-gradient(#ffffff, #e8e8e8);
+    background: #0c745f;
 }
 
 .controls button.on {
-    background: linear-gradient(#b7ffb7, #93ee93);
+    background: #0c745f;
 }
 
 .controls button.on:hover {
-    background: linear-gradient(#ccffcc, #a8f0a8);
+    background: #0b6554;
 }
 
 .controls button.on:active {
-    background: linear-gradient(#93ee93, #7ccc7c);
+    background: #094e42;
 }
 .plots {
     display: flex;
@@ -66,8 +70,8 @@ body {
     min-width: 0;
     padding: 10px;
     border-radius: 12px;
-    background: transparent;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+    background: #ffffff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     height: 380px; /* 10px padding around a 360px plot */
 }
 @media (max-width: 1024px) {
@@ -91,11 +95,12 @@ body {
 
 .tab-buttons button {
     flex: 1 1 50%;
-    padding: 10px 16px;
+    padding: 8px 16px;
     margin: 0 4px;
-    border: 1px solid transparent;
-    border-radius: 20px;
-    background: #f2f3f5;
+    border: none;
+    border-radius: 6px;
+    background: #f7f7f8;
+    color: #333333;
     cursor: pointer;
     font-size: 16px;
     transition: background 0.2s, box-shadow 0.2s;
@@ -106,9 +111,9 @@ body {
 }
 
 .tab-buttons button.active {
-    background: #ffffff;
+    background: #10a37f;
+    color: #ffffff;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    border-color: #ccc;
 }
 
 .swipe-container {
@@ -116,6 +121,7 @@ body {
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
+    padding: 0 10px;
     scrollbar-width: none; /* hide scrollbar in Firefox */
     -ms-overflow-style: none; /* hide scrollbar in IE/Edge */
 }
@@ -131,5 +137,7 @@ body {
     border-radius: 16px;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
     margin-bottom: 10px;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 

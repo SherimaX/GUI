@@ -348,8 +348,10 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
             html.Div(EventSource(id="es", url="/events"), style={"display": "none"}),
             dcc.Store(id="tab-index", data=0),
             html.Div(
+                id="tabbar",
                 className="tab-buttons",
                 children=[
+                    html.Span(id="tabHighlight", style={"transform": "translateX(0%)"}),
                     html.Button("Angle + Torque", id="tab-angle", n_clicks=0, className="active"),
                     html.Button("Insole", id="tab-insole", n_clicks=0),
                 ],
@@ -658,12 +660,18 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                 var width = cont.clientWidth;
                 cont.scrollTo({left: width * idx, behavior: 'smooth'});
             }
-            return [idx, idx===0 ? 'active' : '', idx===1 ? 'active' : ''];
+            return [
+                idx,
+                idx===0 ? 'active' : '',
+                idx===1 ? 'active' : '',
+                {transform: 'translateX(' + (idx*100) + '%)'}
+            ];
         }
         """,
         Output("tab-index", "data"),
         Output("tab-angle", "className"),
         Output("tab-insole", "className"),
+        Output("tabHighlight", "style"),
         Input("tab-angle", "n_clicks"),
         Input("tab-insole", "n_clicks"),
         State("tab-index", "data"),

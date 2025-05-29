@@ -11,7 +11,7 @@ Run:
     python app.py  # then open http://127.0.0.1:8050 in a browser
 
 Make sure Simulink is broadcasting the 112-byte data packets defined in
-`config.yaml`. The app listens on the configured port and updates at ~5 Hz.
+`config.yaml`. The app listens on the configured port and updates at ~10 Hz.
 """
 
 from __future__ import annotations
@@ -52,7 +52,7 @@ COLOR_CYCLE = [
 CONFIG_FILE = "config.yaml"
 CONTROL_FMT = "<4f"  # zero, motor, assist, k  (4 × float32 = 16 bytes)
 HISTORY = 5000  # number of samples to keep for plotting (increased)
-UPDATE_MS = 100  # UI poll interval in milliseconds
+UPDATE_MS = 100  # throttle SSE updates to this interval (ms)
 N_WINDOW_SEC = 10  # how many seconds of data to show in plots
 LOG_FILE = "data_log.csv"
 
@@ -711,22 +711,27 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                     except Exception:
                         break
                 batch: List[Dict[str, float]] = []
+                last_emit = time.time()
                 while True:
                     item = event_q.get()
                     batch.append(item)
-                    # pull everything that's waiting to minimise messages
+
+                    # pull everything that's waiting so we send compact batches
                     while not event_q.empty() and len(batch) < 50:
                         batch.append(event_q.get())
 
-                    payload = {
-                        "t": [s["t"] for s in batch],
-                        "ankle": [s["ankle"] for s in batch],
-                        "torque": [s["torque"] for s in batch],
-                        "press": [s["press"] for s in batch],
-                        "imu": [s["imu"] for s in batch],
-                    }
-                    batch.clear()
-                    yield f"data:{json.dumps(payload)}\n\n"
+                    now = time.time()
+                    if now - last_emit >= UPDATE_MS / 1000.0:
+                        payload = {
+                            "t": [s["t"] for s in batch],
+                            "ankle": [s["ankle"] for s in batch],
+                            "torque": [s["torque"] for s in batch],
+                            "press": [s["press"] for s in batch],
+                            "imu": [s["imu"] for s in batch],
+                        }
+                        batch.clear()
+                        last_emit = now
+                        yield f"data:{json.dumps(payload)}\n\n"
             finally:
                 with _client_lock:
                     _active_clients -= 1

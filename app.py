@@ -21,6 +21,9 @@ import threading
 import time
 import collections
 from typing import Dict, Any, Deque, List
+import platform
+import subprocess
+import math
 
 import yaml
 import socket
@@ -73,6 +76,20 @@ def decode_packet(data: bytes, fmt: str, mapping: Dict[str, int]) -> Dict[str, f
     """Decode *data* (binary) into a dict using *fmt* and *mapping*."""
     values = struct.unpack(fmt, data)
     return {name: values[idx] for name, idx in mapping.items()}
+
+
+def is_host_reachable(host: str) -> bool:
+    """Return True if *host* responds to a single ping."""
+    param = "-n" if platform.system().lower().startswith("win") else "-c"
+    try:
+        result = subprocess.run(
+            ["ping", param, "1", host],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        return result.returncode == 0
+    except Exception:
+        return False
 
 
 def send_control_packet(
@@ -173,6 +190,59 @@ def start_udp_listener(
         except Exception:
             # queue full – drop sample to avoid blocking UDP thread
             pass
+
+
+def start_fake_data(
+    cfg: Dict[str, Any], buffer: Deque[Dict[str, float]], logger: DataLogger
+) -> None:
+    """Generate synthetic samples when the Simulink host is unreachable."""
+    print("Simulink host unreachable – using fake data generator")
+    t = 0.0
+    dt = 0.01
+    while True:
+        ankle = 20.0 * math.sin(t)
+        torque = 5.0 * math.sin(t / 2.0)
+        pressures = [500.0 + 100.0 * math.sin(t + i) for i in range(8)]
+        imus = [math.sin(t + i * 0.1) for i in range(12)]
+
+        sample = {
+            "time": t,
+            "ankle_angle": ankle,
+            "actual_torque": torque,
+        }
+        for i, p in enumerate(pressures, 1):
+            sample[f"pressure_{i}"] = p
+        for i, val in enumerate(imus, 1):
+            sample[f"imu_{i}"] = val
+
+        buffer.append(sample)
+
+        with plot_lock:
+            plot_state["times"].append(t)
+            plot_state["ankle"].append(ankle)
+            plot_state["torque"].append(torque)
+            for i, p in enumerate(pressures, 1):
+                plot_state["pressures"][i].append(p)
+            for i, val in enumerate(imus, 1):
+                plot_state["imus"][i].append(val)
+
+        logger.log(t, ankle, pressures)
+
+        try:
+            event_q.put_nowait(
+                {
+                    "t": t,
+                    "ankle": ankle,
+                    "torque": torque,
+                    "press": pressures,
+                    "imu": imus,
+                }
+            )
+        except Exception:
+            pass
+
+        time.sleep(dt)
+        t += dt
 
 
 # --------------------------------------------------------------------------------------
@@ -563,9 +633,14 @@ if __name__ == "__main__":
     logger = DataLogger(LOG_FILE)
     data_queue: Deque[Dict[str, float]] = collections.deque(maxlen=HISTORY)
 
-    # Spin up the listener in a daemon thread
+    # Spin up the UDP listener, falling back to a fake data generator if the
+    # Simulink host cannot be reached.
+    target_fn = start_udp_listener
+    if not is_host_reachable(cfg["udp"]["send_host"]):
+        target_fn = start_fake_data
+
     listener_t = threading.Thread(
-        target=start_udp_listener,
+        target=target_fn,
         args=(cfg, data_queue, logger),
         daemon=True,
     )

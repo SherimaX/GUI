@@ -74,6 +74,29 @@ MAX_CLIENTS = 5
 _active_clients = 0
 _client_lock = threading.Lock()
 
+# Helper to create a line trace with a separate legend marker
+def make_line_with_marker(name: str, color: str) -> list[go.Scattergl]:
+    """Return a line trace and a marker-only trace for the legend."""
+    line = go.Scattergl(
+        x=[],
+        y=[],
+        mode="lines",
+        name=name,
+        line=dict(width=3, color=color),
+        legendgroup=name,
+        showlegend=False,
+    )
+    marker = go.Scattergl(
+        x=[None],
+        y=[None],
+        mode="markers",
+        name=name,
+        marker=dict(size=8, color=color, symbol="circle"),
+        legendgroup=name,
+        showlegend=True,
+    )
+    return [line, marker]
+
 # --------------------------------------------------------------------------------------
 # Config & helpers
 # --------------------------------------------------------------------------------------
@@ -326,15 +349,9 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                         id="torque",
                                         style={"height": "360px"},
                                         figure=go.Figure(
-                                            data=[
-                                                go.Scattergl(
-                                                    x=[],
-                                                    y=[],
-                                                    mode="lines",
-                                                    name="actual_torque",
-                                                    line=dict(width=3, color="#0B74FF"),
-                                                )
-                                            ],
+                                            data=make_line_with_marker(
+                                                "actual_torque", "#0B74FF"
+                                            ),
                                             layout=dict(
                                                 yaxis=dict(
                                                     range=[-5, 15],
@@ -365,15 +382,9 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                         id="ankle",
                                         style={"height": "360px"},
                                         figure=go.Figure(
-                                            data=[
-                                                go.Scattergl(
-                                                    x=[],
-                                                    y=[],
-                                                    mode="lines",
-                                                    name="ankle_angle",
-                                                    line=dict(width=3, color="#12C37E"),
-                                                )
-                                            ],
+                                            data=make_line_with_marker(
+                                                "ankle_angle", "#12C37E"
+                                            ),
                                             layout=dict(
                                                 yaxis=dict(
                                                     range=[-60, 60],
@@ -415,17 +426,12 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                         style={"height": "360px"},
                                         figure=go.Figure(
                                             data=[
-                                                go.Scattergl(
-                                                    x=[],
-                                                    y=[],
-                                                    mode="lines",
-                                                    name=f"pressure_{i}",
-                                                    line=dict(
-                                                        width=3,
-                                                        color=COLOR_CYCLE[(i - 1) % len(COLOR_CYCLE)],
-                                                    ),
-                                                )
+                                                tr
                                                 for i in range(1, 9)
+                                                for tr in make_line_with_marker(
+                                                    f"pressure_{i}",
+                                                    COLOR_CYCLE[(i - 1) % len(COLOR_CYCLE)],
+                                                )
                                             ],
                                             layout=dict(
                                                 yaxis=dict(
@@ -466,17 +472,12 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                         style={"height": "360px"},
                                         figure=go.Figure(
                                             data=[
-                                                go.Scattergl(
-                                                    x=[],
-                                                    y=[],
-                                                    mode="lines",
-                                                    name=f"imu_{i}",
-                                                    line=dict(
-                                                        width=3,
-                                                        color=COLOR_CYCLE[(i - 1) % len(COLOR_CYCLE)],
-                                                    ),
-                                                )
+                                                tr
                                                 for i in range(1, 4)
+                                                for tr in make_line_with_marker(
+                                                    f"imu_{i}",
+                                                    COLOR_CYCLE[(i - 1) % len(COLOR_CYCLE)],
+                                                )
                                             ],
                                             layout=dict(
                                                 yaxis=dict(

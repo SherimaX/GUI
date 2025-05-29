@@ -32,6 +32,28 @@ COLOR_CYCLE = [
     "#7F7F7F",
 ]
 
+def make_line_with_marker(name: str, color: str) -> list[go.Scatter]:
+    """Return a line trace and a marker-only trace for the legend."""
+    line = go.Scatter(
+        x=[],
+        y=[],
+        mode="lines",
+        name=name,
+        line=dict(width=3, color=color),
+        legendgroup=name,
+        showlegend=False,
+    )
+    marker = go.Scatter(
+        x=[None],
+        y=[None],
+        mode="markers",
+        name=name,
+        marker=dict(size=8, color=color, symbol="circle"),
+        legendgroup=name,
+        showlegend=True,
+    )
+    return [line, marker]
+
 # -----------------------------------------------------------------------------
 # Helpers
 # -----------------------------------------------------------------------------
@@ -81,15 +103,10 @@ def update_figures(_):  # noqa: D401
 
     # Ankle angle
     fig_ankle = go.Figure()
-    fig_ankle.add_trace(
-        go.Scatter(
-            x=times,
-            y=df["ankle_angle"],
-            mode="lines",
-            name="ankle_angle",
-            line=dict(width=3, color="#0B74FF"),
-        )
-    )
+    for tr in make_line_with_marker("ankle_angle", "#0B74FF"):
+        tr.x = times
+        tr.y = df["ankle_angle"] if tr.mode == "lines" else [None]
+        fig_ankle.add_trace(tr)
     fig_ankle.update_yaxes(
         range=[-60, 60],
         title="Ankle Angle (deg)",
@@ -116,15 +133,10 @@ def update_figures(_):  # noqa: D401
         key = f"pressure_{i}"
         if key in df:
             color = COLOR_CYCLE[(i - 1) % len(COLOR_CYCLE)]
-            fig_press.add_trace(
-                go.Scatter(
-                    x=times,
-                    y=df[key],
-                    mode="lines",
-                    name=key,
-                    line=dict(width=3, color=color),
-                )
-            )
+            for tr in make_line_with_marker(key, color):
+                tr.x = times
+                tr.y = df[key] if tr.mode == "lines" else [None]
+                fig_press.add_trace(tr)
     fig_press.update_yaxes(
         range=[0, 1000],
         title="Pressure",

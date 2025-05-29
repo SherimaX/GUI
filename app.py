@@ -28,7 +28,7 @@ import math
 import yaml
 import socket
 import json
-from queue import Queue
+from queue import Queue, Full
 from flask import Response
 from dash_extensions import EventSource
 
@@ -67,7 +67,8 @@ plot_state: Dict[str, Any] = {
 }
 
 # Queue for server-sent events (SSE) to push fresh samples to the browser
-event_q: Queue = Queue(maxsize=10000)
+# Keep only the newest 1000 samples (~10 s at 100 Hz)
+event_q: Queue = Queue(maxsize=1000)
 
 # Limit concurrent SSE clients
 MAX_CLIENTS = 5
@@ -214,17 +215,18 @@ def start_udp_listener(
         }
         try:
             event_q.put_nowait(sample)
-            now = time.time()
-            if now - last_status >= 10.0:
-                # Periodic hint that data is flowing
-                # Commented out verbose queue status printing
-                # print(
-                #     f"Enqueued {packets_rcvd} samples. Queue size: {event_q.qsize()}"
-                # )
-                last_status = now
-        except Exception:
-            # queue full – drop sample to avoid blocking UDP thread
-            pass
+        except Full:
+            try:
+                event_q.get_nowait()
+            except Exception:
+                pass
+            try:
+                event_q.put_nowait(sample)
+            except Exception:
+                pass
+        now = time.time()
+        if now - last_status >= 10.0:
+            last_status = now
 
 
 def start_fake_data(
@@ -276,9 +278,25 @@ def start_fake_data(
                     "press": pressures,
                     "imu": imus,
                 }
-        )
-        except Exception:
-            pass
+            )
+        except Full:
+            try:
+                event_q.get_nowait()
+            except Exception:
+                pass
+            try:
+                event_q.put_nowait(
+                    {
+                        "t": t,
+                        "ankle": ankle,
+                        "torque": torque,
+                        "gait": gait,
+                        "press": pressures,
+                        "imu": imus,
+                    }
+                )
+            except Exception:
+                pass
 
         time.sleep(dt)
         t += dt
@@ -762,6 +780,13 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                 batch: List[Dict[str, float]] = []
                 last_emit = time.time()
                 while True:
+                    # ensure the queue never grows beyond 1000 samples
+                    while event_q.qsize() > 1000:
+                        try:
+                            event_q.get_nowait()
+                        except Exception:
+                            break
+
                     item = event_q.get()
                     batch.append(item)
 

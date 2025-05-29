@@ -649,7 +649,7 @@ if __name__ == "__main__":
     try:
         dash_app = build_dash_app(cfg, data_queue)
         dash_app.run(
-            host="192.168.7.15",
+            host="127.0.0.1",
             port=8050,
             debug=True,
             use_reloader=False,

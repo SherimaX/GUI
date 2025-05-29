@@ -11,10 +11,8 @@
         if(idx > 1){ idx = 1; }
 
         var tabWidth = cont.clientWidth / 2;
-        var pillWidth = cont.clientWidth * 0.25; // match CSS width
-        var offset = idx * tabWidth + (tabWidth - pillWidth) / 2;
-
-        highlight.style.width = pillWidth + 'px';
+        var offset = idx * tabWidth;
+        highlight.style.width = tabWidth + 'px';
         highlight.style.transform = 'translateX(' + offset + 'px)';
 
         angleBtn.classList.toggle('active', idx === 0);

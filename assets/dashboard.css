@@ -102,7 +102,7 @@ button {
     display: flex;
     overflow: hidden;
     margin: 0 auto 10px;
-    width: 80%; /* reduce width from 90% */
+    width: 80%;
     border-radius: 9999px;
     border: 1px solid #E5E7EB;
     background: #ffffff;
@@ -121,10 +121,12 @@ button {
 #   - same border radius and transition as before
 #tabHighlight {
     position: absolute;
-    inset: 0;
-    width: 25%;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 50%;
     border-radius: inherit;
-    background: #000000;
+    background: #1f2937;
     transition: transform .25s ease;
 }
 
@@ -149,7 +151,9 @@ button {
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
-    padding: 0 10px;
+    width: 80%;
+    margin: 0 auto;
+    padding: 0;
     scrollbar-width: none; /* hide scrollbar in Firefox */
     -ms-overflow-style: none; /* hide scrollbar in IE/Edge */
 }
@@ -158,15 +162,13 @@ button {
 }
 
 .swipe-page {
-    flex: 0 0 80%;
+    flex: 0 0 100%;
     scroll-snap-align: start;
     padding: 20px;
     background: #ffffff;
     border-radius: 16px;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-    margin: 0 10%;
     margin-bottom: 10px;
-    max-width: 80%;
     box-sizing: border-box;
 }
 

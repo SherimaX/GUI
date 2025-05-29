@@ -213,8 +213,17 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                 go.Scatter(x=[], y=[], mode="lines", name="ankle_angle")
                             ],
                             layout=dict(
-                                yaxis=dict(range=[-60, 60]),
-                                title="Ankle Angle (deg)",
+                                yaxis=dict(
+                                    range=[-60, 60],
+                                    title="Ankle Angle (deg)",
+                                    gridcolor="#cccccc",
+                                    tickfont=dict(size=12),
+                                ),
+                                xaxis=dict(gridcolor="#cccccc", tickfont=dict(size=12)),
+                                title=None,
+                                plot_bgcolor="rgba(0,0,0,0)",
+                                paper_bgcolor="rgba(0,0,0,0)",
+                                font=dict(family="IBM Plex Sans Condensed", size=14),
                             ),
                         ),
                         config={"displayModeBar": False, "staticPlot": True},
@@ -227,8 +236,14 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                 for i in range(1, 9)
                             ],
                             layout=dict(
-                                yaxis=dict(range=[0, 1000]),
-                                title="Pressure",
+                                yaxis=dict(
+                                    range=[0, 1000],
+                                    title="Pressure (N)",
+                                    gridcolor="#cccccc",
+                                    tickfont=dict(size=12),
+                                ),
+                                xaxis=dict(gridcolor="#cccccc", tickfont=dict(size=12)),
+                                title=None,
                                 legend=dict(
                                     orientation="h",
                                     yanchor="bottom",
@@ -237,6 +252,9 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                     x=0,
                                 ),
                                 margin=dict(t=60),
+                                plot_bgcolor="rgba(0,0,0,0)",
+                                paper_bgcolor="rgba(0,0,0,0)",
+                                font=dict(family="IBM Plex Sans Condensed", size=14),
                             ),
                         ),
                         config={"displayModeBar": False, "staticPlot": True},

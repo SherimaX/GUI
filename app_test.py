@@ -69,10 +69,24 @@ def update_figures(_):  # noqa: D401
 
     # Ankle angle
     fig_ankle = go.Figure()
-    fig_ankle.add_trace(go.Scatter(x=times, y=df["ankle_angle"], mode="lines", name="ankle_angle"))
-    fig_ankle.update_yaxes(range=[-60, 60])
-    fig_ankle.update_xaxes(range=[times[0], times[-1]])
-    fig_ankle.update_layout(title="Ankle Angle (deg)")
+    fig_ankle.add_trace(
+        go.Scatter(x=times, y=df["ankle_angle"], mode="lines", name="ankle_angle")
+    )
+    fig_ankle.update_yaxes(
+        range=[-60, 60],
+        title="Ankle Angle (deg)",
+        gridcolor="#cccccc",
+        tickfont=dict(size=12),
+    )
+    fig_ankle.update_xaxes(
+        range=[times[0], times[-1]], gridcolor="#cccccc", tickfont=dict(size=12)
+    )
+    fig_ankle.update_layout(
+        title=None,
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="IBM Plex Sans Condensed", size=14),
+    )
 
     # Pressures
     fig_press = go.Figure()
@@ -80,9 +94,22 @@ def update_figures(_):  # noqa: D401
         key = f"pressure_{i}"
         if key in df:
             fig_press.add_trace(go.Scatter(x=times, y=df[key], mode="lines", name=key))
-    fig_press.update_yaxes(range=[0, 1000])
-    fig_press.update_xaxes(range=[times[0], times[-1]])
-    fig_press.update_layout(title="Plantar Pressures")
+    fig_press.update_yaxes(
+        range=[0, 1000],
+        title="Pressure (N)",
+        gridcolor="#cccccc",
+        tickfont=dict(size=12),
+    )
+    fig_press.update_xaxes(
+        range=[times[0], times[-1]], gridcolor="#cccccc", tickfont=dict(size=12)
+    )
+    fig_press.update_layout(
+        title=None,
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        legend=dict(orientation="h"),
+        font=dict(family="IBM Plex Sans Condensed", size=14),
+    )
 
     return fig_ankle, fig_press
 

@@ -192,12 +192,17 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         children=[
             html.H2("AFO Dashboard"),
             html.Div(
-                className="controls",
+                className="controls-dock",
                 children=[
-                    html.Button("zero", id="zero-btn", n_clicks=0),
-                    html.Button("motor", id="motor-btn", n_clicks=0),
-                    html.Button("assist", id="assist-btn", n_clicks=0),
-                    html.Button("k", id="k-btn", n_clicks=0),
+                    html.Div(
+                        className="controls",
+                        children=[
+                            html.Button("zero", id="zero-btn", n_clicks=0),
+                            html.Button("motor", id="motor-btn", n_clicks=0),
+                            html.Button("assist", id="assist-btn", n_clicks=0),
+                            html.Button("k", id="k-btn", n_clicks=0),
+                        ],
+                    )
                 ],
             ),
             dcc.Store(id="zero-state", data=0),
@@ -205,7 +210,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
             dcc.Store(id="assist-state", data=0),
             dcc.Store(id="k-state", data=0),
             dcc.Interval(id="zero-interval", interval=100, n_intervals=0),
-            EventSource(id="es", url="/events"),
+            EventSource(id="es", url="/events", style={"display": "none"}),
             html.Div(
                 className="plots",
                 children=[

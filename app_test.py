@@ -75,14 +75,17 @@ def update_figures(_):  # noqa: D401
             y=df["ankle_angle"],
             mode="lines",
             name="ankle_angle",
-            line=dict(width=4, color="#0B74FF"),
+            line=dict(width=3, color="#0B74FF"),
         )
     )
     fig_ankle.update_yaxes(
         range=[-60, 60],
         title="Ankle Angle (deg)",
         gridcolor="#EEF1F4",
-        gridwidth=1,
+        gridwidth=2,
+        zeroline=True,
+        zerolinecolor="#EEF1F4",
+        zerolinewidth=2,
         tickfont=dict(size=12),
     )
     fig_ankle.update_xaxes(
@@ -101,9 +104,9 @@ def update_figures(_):  # noqa: D401
         key = f"pressure_{i}"
         if key in df:
             line_style = (
-                dict(width=4, color="#0B74FF")
+                dict(width=3, color="#0B74FF")
                 if i == 1
-                else (dict(width=4, color="#12C37E") if i == 2 else None)
+                else (dict(width=3, color="#12C37E") if i == 2 else None)
             )
             fig_press.add_trace(
                 go.Scatter(x=times, y=df[key], mode="lines", name=key, line=line_style)
@@ -112,7 +115,10 @@ def update_figures(_):  # noqa: D401
         range=[0, 1000],
         title="Pressure",
         gridcolor="#EEF1F4",
-        gridwidth=1,
+        gridwidth=2,
+        zeroline=True,
+        zerolinecolor="#EEF1F4",
+        zerolinewidth=2,
         tickfont=dict(size=12),
     )
     fig_press.update_xaxes(

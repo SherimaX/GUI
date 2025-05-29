@@ -318,7 +318,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                     y=[],
                                                     mode="lines",
                                                     name="actual_torque",
-                                                    line=dict(width=4, color="#0B74FF"),
+                                                    line=dict(width=3, color="#0B74FF"),
                                                 )
                                             ],
                                             layout=dict(
@@ -326,7 +326,10 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                     range=[-5, 15],
                                                     title="Actual Torque",
                                                     gridcolor="#EEF1F4",
-                                                    gridwidth=1,
+                                                    gridwidth=2,
+                                                    zeroline=True,
+                                                    zerolinecolor="#EEF1F4",
+                                                    zerolinewidth=2,
                                                     tickfont=dict(size=16),
                                                 ),
                                                 xaxis=dict(
@@ -354,7 +357,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                     y=[],
                                                     mode="lines",
                                                     name="ankle_angle",
-                                                    line=dict(width=4, color="#12C37E"),
+                                                    line=dict(width=3, color="#12C37E"),
                                                 )
                                             ],
                                             layout=dict(
@@ -362,7 +365,10 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                     range=[-60, 60],
                                                     title="Ankle Angle (deg)",
                                                     gridcolor="#EEF1F4",
-                                                    gridwidth=1,
+                                                    gridwidth=2,
+                                                    zeroline=True,
+                                                    zerolinecolor="#EEF1F4",
+                                                    zerolinewidth=2,
                                                     tickfont=dict(size=16),
                                                 ),
                                                 xaxis=dict(
@@ -401,10 +407,10 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                     mode="lines",
                                                     name=f"pressure_{i}",
                                                     line=(
-                                                        dict(width=4, color="#0B74FF")
+                                                        dict(width=3, color="#0B74FF")
                                                         if i == 1
                                                         else (
-                                                            dict(width=4, color="#12C37E")
+                                                            dict(width=3, color="#12C37E")
                                                             if i == 2
                                                             else None
                                                         )
@@ -417,7 +423,10 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                     range=[0, 1000],
                                                     title="Pressure",
                                                     gridcolor="#EEF1F4",
-                                                    gridwidth=1,
+                                                    gridwidth=2,
+                                                    zeroline=True,
+                                                    zerolinecolor="#EEF1F4",
+                                                    zerolinewidth=2,
                                                     tickfont=dict(size=16),
                                                 ),
                                                 xaxis=dict(
@@ -454,10 +463,10 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                     mode="lines",
                                                     name=f"imu_{i}",
                                                     line=(
-                                                        dict(width=4, color="#0B74FF")
+                                                        dict(width=3, color="#0B74FF")
                                                         if i == 1
                                                         else (
-                                                            dict(width=4, color="#12C37E")
+                                                            dict(width=3, color="#12C37E")
                                                             if i == 2
                                                             else None
                                                         )
@@ -470,7 +479,10 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                     range=[-3, 3],
                                                     title="IMU",
                                                     gridcolor="#EEF1F4",
-                                                    gridwidth=1,
+                                                    gridwidth=2,
+                                                    zeroline=True,
+                                                    zerolinecolor="#EEF1F4",
+                                                    zerolinewidth=2,
                                                     tickfont=dict(size=16),
                                                 ),
                                                 xaxis=dict(

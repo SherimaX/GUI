@@ -10,13 +10,15 @@ from typing import Sequence
 HEADER_FIELDS = ["time", "ankle_angle"] + [f"pressure_{i}" for i in range(1, 9)]
 
 class DataLogger:
-    """Asynchronous CSV logger with buffering."""
+    """Asynchronous CSV logger that keeps only the most recent rows."""
 
-    def __init__(self, path: str, flush_interval: float = 1.0) -> None:
+    def __init__(self, path: str, flush_interval: float = 1.0, max_rows: int = 1000) -> None:
         self.path = path
         self.flush_interval = flush_interval
         self._lock = threading.Lock()
         self._buf: collections.deque[str] = collections.deque()
+        # Ring buffer to retain the newest ``max_rows`` entries on disk
+        self._ring: collections.deque[str] = collections.deque(maxlen=max_rows)
         self._stop = threading.Event()
         with open(self.path, "w", encoding="utf-8") as f:
             f.write(",".join(HEADER_FIELDS) + "\n")
@@ -26,7 +28,9 @@ class DataLogger:
     def log(self, t: float, ankle: float, pressures: Sequence[float]) -> None:
         row = [f"{t:.4f}", f"{ankle:.4f}"] + [f"{p:.1f}" for p in pressures]
         with self._lock:
-            self._buf.append(",".join(row))
+            line = ",".join(row)
+            self._buf.append(line)
+            self._ring.append(line)
 
     def _worker(self) -> None:
         while not self._stop.is_set():
@@ -35,12 +39,15 @@ class DataLogger:
 
     def flush(self) -> None:
         with self._lock:
-            if not self._buf:
+            if not self._buf and not self._ring:
                 return
-            data = "\n".join(self._buf)
+            # _buf entries are already in _ring via ``log``
             self._buf.clear()
-        with open(self.path, "a", encoding="utf-8") as f:
-            f.write(data + "\n")
+            lines = list(self._ring)
+        with open(self.path, "w", encoding="utf-8") as f:
+            f.write(",".join(HEADER_FIELDS) + "\n")
+            if lines:
+                f.write("\n".join(lines) + "\n")
 
     def stop(self) -> None:
         self._stop.set()

@@ -37,6 +37,18 @@ import dash
 from dash import dcc, html, Input, Output, State
 import plotly.graph_objs as go
 
+# Consistent colors for pressure/IMU traces
+COLOR_CYCLE = [
+    "#0B74FF",
+    "#12C37E",
+    "#FF7F0E",
+    "#D62728",
+    "#9467BD",
+    "#8C564B",
+    "#E377C2",
+    "#7F7F7F",
+]
+
 CONFIG_FILE = "config.yaml"
 CONTROL_FMT = "<4f"  # zero, motor, assist, k  (4 × float32 = 16 bytes)
 HISTORY = 5000  # number of samples to keep for plotting (increased)
@@ -404,17 +416,13 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                 go.Scatter(
                                                     x=[],
                                                     y=[],
-                                                    mode="lines",
+                                                    mode="lines+markers",
                                                     name=f"pressure_{i}",
-                                                    line=(
-                                                        dict(width=3, color="#0B74FF")
-                                                        if i == 1
-                                                        else (
-                                                            dict(width=3, color="#12C37E")
-                                                            if i == 2
-                                                            else None
-                                                        )
+                                                    line=dict(
+                                                        width=3,
+                                                        color=COLOR_CYCLE[(i - 1) % len(COLOR_CYCLE)],
                                                     ),
+                                                    marker=dict(symbol="circle", size=6),
                                                 )
                                                 for i in range(1, 9)
                                             ],
@@ -460,17 +468,13 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                 go.Scatter(
                                                     x=[],
                                                     y=[],
-                                                    mode="lines",
+                                                    mode="lines+markers",
                                                     name=f"imu_{i}",
-                                                    line=(
-                                                        dict(width=3, color="#0B74FF")
-                                                        if i == 1
-                                                        else (
-                                                            dict(width=3, color="#12C37E")
-                                                            if i == 2
-                                                            else None
-                                                        )
+                                                    line=dict(
+                                                        width=3,
+                                                        color=COLOR_CYCLE[(i - 1) % len(COLOR_CYCLE)],
                                                     ),
+                                                    marker=dict(symbol="circle", size=6),
                                                 )
                                                 for i in range(1, 4)
                                             ],

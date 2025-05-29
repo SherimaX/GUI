@@ -11,7 +11,8 @@ Run:
     python app.py  # then open http://127.0.0.1:8050 in a browser
 
 Make sure Simulink is broadcasting the 112-byte data packets defined in
-`config.yaml`. The app listens on the configured port and updates at ~100 Hz.
+`config.yaml`. The app listens on the configured port and updates at
+~SAMPLE_RATE_HZ Hz (see :data:`SAMPLE_RATE_HZ`).
 """
 
 from __future__ import annotations
@@ -51,24 +52,26 @@ COLOR_CYCLE = [
 CONFIG_FILE = "config.yaml"
 CONTROL_FMT = "<4f"  # zero, motor, assist, k  (4 × float32 = 16 bytes)
 HISTORY = 5000  # number of samples to keep for plotting (increased)
-# Send SSE batches every 10 ms so the frontend receives data at ~100 Hz
+# Send SSE batches every 10 ms so the frontend receives data at ~SAMPLE_RATE_HZ Hz
 UPDATE_MS = 10  # throttle SSE updates to this interval (ms)
 N_WINDOW_SEC = 10  # how many seconds of data to show in plots
+SAMPLE_RATE_HZ = 100  # expected UDP sample rate
+max_points = int(N_WINDOW_SEC * SAMPLE_RATE_HZ)
 
 # Shared state for plotting (producer: UDP listener, consumer: Dash callback)
 plot_lock = threading.Lock()
 plot_state: Dict[str, Any] = {
-    "times": collections.deque(maxlen=1000),
-    "ankle": collections.deque(maxlen=1000),
-    "torque": collections.deque(maxlen=1000),
-    "gait": collections.deque(maxlen=1000),
-    "pressures": {i: collections.deque(maxlen=1000) for i in range(1, 9)},
-    "imus": {i: collections.deque(maxlen=1000) for i in range(1, 13)},
+    "times": collections.deque(maxlen=max_points),
+    "ankle": collections.deque(maxlen=max_points),
+    "torque": collections.deque(maxlen=max_points),
+    "gait": collections.deque(maxlen=max_points),
+    "pressures": {i: collections.deque(maxlen=max_points) for i in range(1, 9)},
+    "imus": {i: collections.deque(maxlen=max_points) for i in range(1, 13)},
 }
 
 # Queue for server-sent events (SSE) to push fresh samples to the browser
-# Keep only the newest 1000 samples (~10 s at 100 Hz)
-event_q: Queue = Queue(maxsize=1000)
+# Keep only the newest `max_points` samples (~N_WINDOW_SEC seconds at SAMPLE_RATE_HZ)
+event_q: Queue = Queue(maxsize=max_points)
 
 # Limit concurrent SSE clients
 MAX_CLIENTS = 5
@@ -230,8 +233,8 @@ def start_fake_data(
     """Generate synthetic samples when the Simulink host is unreachable."""
     print("Simulink host unreachable – using fake data generator")
     t = 0.0
-    # 100 Hz update rate
-    dt = 0.01
+    # match the expected sample rate
+    dt = 1.0 / SAMPLE_RATE_HZ
     while True:
         ankle = 20.0 * math.sin(t)
         torque = 5.0 * math.sin(t / 2.0)
@@ -720,35 +723,35 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
             if(press && typeof press[0] === 'number') press = [press];
             if(imu && typeof imu[0] === 'number') imu = [imu];
 
-            var pressT = Array.from({length:8}, () => []);
-            for(var i=0;i<press.length;i++){
-                for(var j=0;j<8;j++){
+            var pressT = Array.from({{length:8}}, () => []);
+            for(var i=0;i<press.length;i++){{
+                for(var j=0;j<8;j++){{
                     pressT[j].push(press[i][j]);
-                }
-            }
+                }}
+            }}
 
-            var imuT = Array.from({length:3}, () => []);
-            for(var i=0;i<imu.length;i++){
-                for(var j=0;j<3;j++){
+            var imuT = Array.from({{length:3}}, () => []);
+            for(var i=0;i<imu.length;i++){{
+                for(var j=0;j<3;j++){{
                     imuT[j].push(imu[i][j]);
-                }
-            }
+                }}
+            }}
 
-            var torque_payload = {x:[t], y:[torque]};
-            var ankle_payload = {x:[t], y:[ankle]};
-            var gait_payload = {x:[t], y:[gait]};
-            var press_payload = {x:Array(8).fill(t), y:pressT};
-            var imu_payload = {x:Array(3).fill(t), y:imuT};
+            var torque_payload = {{x:[t], y:[torque]}};
+            var ankle_payload = {{x:[t], y:[ankle]}};
+            var gait_payload = {{x:[t], y:[gait]}};
+            var press_payload = {{x:Array(8).fill(t), y:pressT}};
+            var imu_payload = {{x:Array(3).fill(t), y:imuT}};
 
             return [
-                [torque_payload, [0], 1000],
-                [ankle_payload, [0], 1000],
-                [gait_payload, [0], 1000],
-                [press_payload, [0,2,4,6,8,10,12,14], 1000],
-                [imu_payload, [0,2,4], 1000]
+                [torque_payload, [0], {max_points}],
+                [ankle_payload, [0], {max_points}],
+                [gait_payload, [0], {max_points}],
+                [press_payload, [0,2,4,6,8,10,12,14], {max_points}],
+                [imu_payload, [0,2,4], {max_points}]
             ];
-        }
-        """,
+        }}
+        """.format(max_points=max_points),
         Output("torque", "extendData"),
         Output("ankle", "extendData"),
         Output("gait", "extendData"),
@@ -775,8 +778,8 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         def generate():
             try:
                 global _active_clients
-                # Drop all but the newest 1000 samples so the client isn't flooded
-                while event_q.qsize() > 1000:
+                # Drop all but the newest max_points samples so the client isn't flooded
+                while event_q.qsize() > max_points:
                     try:
                         event_q.get_nowait()
                     except Exception:
@@ -784,8 +787,8 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                 batch: List[Dict[str, float]] = []
                 last_emit = time.time()
                 while True:
-                    # ensure the queue never grows beyond 1000 samples
-                    while event_q.qsize() > 1000:
+                    # ensure the queue never grows beyond max_points samples
+                    while event_q.qsize() > max_points:
                         try:
                             event_q.get_nowait()
                         except Exception:

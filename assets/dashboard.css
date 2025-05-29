@@ -97,31 +97,39 @@ button {
 }
 
 .tab-buttons {
+    position: relative;
     display: flex;
-    justify-content: center;
-    margin-bottom: 10px;
+    overflow: hidden;
+    margin: 0 auto 10px;
+    width: 90%;
+    border-radius: 9999px;
+    border: 1px solid #E5E7EB;
+    background: #ffffff;
+}
+
+#tabHighlight {
+    position: absolute;
+    inset: 0;
+    width: 50%;
+    border-radius: inherit;
+    background: #000000;
+    transition: transform .25s ease;
 }
 
 .tab-buttons button {
-    flex: 1 1 50%;
+    flex: 1 1 0;
+    position: relative;
+    z-index: 1;
     padding: 8px 16px;
-    margin: 0 4px;
-    border: 1px solid #cccccc;
-    border-radius: 20px;
-    background: #ffffff;
-    color: #000000;
+    border: none;
+    background: none;
+    color: #4b5563;
     cursor: pointer;
     font-size: 16px;
-    transition: background 0.2s, box-shadow 0.2s;
 }
 
-.tab-buttons button:hover {
-    background: #f0f0f0;
-}
 .tab-buttons button.active {
-    background: #000000;
     color: #ffffff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .swipe-container {

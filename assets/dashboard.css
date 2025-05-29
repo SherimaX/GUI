@@ -35,10 +35,18 @@
 .plots {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
     gap: 20px;
 }
-@media (max-aspect-ratio: 1/1) {
+.plots .dash-graph {
+    flex: 1 1 45%;
+    min-width: 0;
+}
+@media (max-width: 1024px) {
     .plots {
         flex-direction: column;
+    }
+    .plots .dash-graph {
+        flex-basis: 100%;
     }
 }

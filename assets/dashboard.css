@@ -73,6 +73,8 @@ button {
     flex-direction: row;
     flex-wrap: wrap;
     gap: 20px;
+    width: 80%;  /* restrict total width */
+    margin: 0 auto; /* center within the page */
 }
 .plots .dash-graph {
     flex: 1 1 30%;
@@ -96,21 +98,33 @@ button {
     display: none;
 }
 
+# The tab bar containing the pill highlight
 .tab-buttons {
     position: relative;
     display: flex;
     overflow: hidden;
     margin: 0 auto 10px;
-    width: 90%;
+    width: 80%; /* reduce width from 90% */
     border-radius: 9999px;
     border: 1px solid #E5E7EB;
     background: #ffffff;
 }
 
+# Sliding pill used to indicate the active tab
+# Width reduced to ~25% to match request
+# Position will be controlled via transform from callbacks/JS
+# so only the width is defined here
+# (the "inset: 0" ensures the pill stays within the tab bar)
+# 25% keeps the pill noticeably smaller than a full tab
+# while remaining responsive.
+#
+# style tuned according to user request
+#   - width: 25% of the tab bar
+#   - same border radius and transition as before
 #tabHighlight {
     position: absolute;
     inset: 0;
-    width: 50%;
+    width: 25%;
     border-radius: inherit;
     background: #000000;
     transition: transform .25s ease;

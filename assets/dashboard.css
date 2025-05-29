@@ -13,10 +13,17 @@ body {
     text-align: center;
     font-family: 'IBM Plex Sans Condensed', sans-serif;
 }
+.controls-dock {
+    padding: 10px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+    margin-bottom: 20px;
+}
+
 .controls {
     display: flex;
     justify-content: space-evenly;
-    margin-bottom: 10px;
 }
 
 .controls button {
@@ -24,7 +31,7 @@ body {
     border: 1px solid #bbb;
     border-radius: 12px;
     background: linear-gradient(#f5f5f5, #e0e0e0);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: none;
     font-size: 16px;
     cursor: pointer;
     transition: none;

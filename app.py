@@ -195,9 +195,10 @@ def start_udp_listener(
             now = time.time()
             if now - last_status >= 10.0:
                 # Periodic hint that data is flowing
-                print(
-                    f"Enqueued {packets_rcvd} samples. Queue size: {event_q.qsize()}"
-                )
+                # Commented out verbose queue status printing
+                # print(
+                #     f"Enqueued {packets_rcvd} samples. Queue size: {event_q.qsize()}"
+                # )
                 last_status = now
         except Exception:
             # queue full – drop sample to avoid blocking UDP thread
@@ -704,7 +705,8 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
             if _active_clients >= MAX_CLIENTS:
                 return Response("Too many clients", status=503)
             _active_clients += 1
-        print(f"[SSE] Client connected. total={_active_clients}")
+        # Removed verbose console output for each SSE client connection.
+        # Use logging/debugging as needed instead of printing.
 
         def generate():
             try:
@@ -740,7 +742,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
             finally:
                 with _client_lock:
                     _active_clients -= 1
-                print(f"[SSE] Client disconnected. total={_active_clients}")
+                # Removed verbose console output for SSE client disconnection.
 
         return Response(generate(), mimetype="text/event-stream")
 

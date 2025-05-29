@@ -695,19 +695,19 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
     # ------------------------------------------------------------------
     app.clientside_callback(
         """
-        function(msg){
-            if(!msg){ return [null, null, null, null, null]; }
+        function(msg){{
+            if(!msg){{ return [null, null, null, null, null]; }}
 
             var json_str = (typeof msg === 'string') ? msg : (msg && msg.data);
-            if(!json_str){ return [null, null, null, null, null]; }
+            if(!json_str){{ return [null, null, null, null, null]; }}
 
             var payload;
-            try {
+            try {{
                 payload = JSON.parse(json_str);
-            } catch(e){
-                console.error('failed to parse SSE payload', e); 
+            }} catch(e){{
+                console.error('failed to parse SSE payload', e);
                 return [null, null, null, null, null];
-            }
+            }}
 
             var t = payload.t;
             var ankle = payload.ankle;

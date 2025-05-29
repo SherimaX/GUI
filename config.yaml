@@ -2,11 +2,11 @@
 udp:
   # IP address to bind the UDP listener ("0.0.0.0" means all interfaces)
   listen_host: "0.0.0.0"
-  listen_port: 5432  # incoming data from Simulink
+  listen_port: 5431  # incoming data from Simulink
 
   # Where to send outbound control packets (Simulink UDP Receive block)
   send_host: "192.168.7.5"
-  send_port: 5432
+  send_port: 5431
 
 # Packet definition
 packet:

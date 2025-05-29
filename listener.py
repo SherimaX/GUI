@@ -68,7 +68,6 @@ def start_udp_listener(cfg: Dict[str, Any], buffer: Deque[Dict[str, float]]) -> 
 
     csv_buffer: collections.deque[str] = collections.deque(maxlen=1000)
     last_flush_wall: float = time.time()
-    last_saved_sim: float | None = None
 
     packets_rcvd = 0
 
@@ -95,20 +94,18 @@ def start_udp_listener(cfg: Dict[str, Any], buffer: Deque[Dict[str, float]]) -> 
         except Exception:
             pass
 
-        # CSV logic
-        if last_saved_sim is None or (sim_t - last_saved_sim) >= 0.01:
-            last_saved_sim = sim_t
-            row = [f"{sim_t:.4f}", f"{ankle:.4f}"] + [
-                f"{decoded.get(f'pressure_{i}', 0.0):.1f}" for i in range(1, 9)
-            ]
-            csv_buffer.append(",".join(row))
+        # CSV logic – log every sample
+        row = [f"{sim_t:.4f}", f"{ankle:.4f}"] + [
+            f"{decoded.get(f'pressure_{i}', 0.0):.1f}" for i in range(1, 9)
+        ]
+        csv_buffer.append(",".join(row))
 
-            now_wall = time.time()
-            if now_wall - last_flush_wall >= 1.0:
-                last_flush_wall = now_wall
-                with open(LOG_FILE, "w", encoding="utf-8") as f:
-                    f.write(",".join(HEADER_FIELDS) + "\n")
-                    f.write("\n".join(csv_buffer))
+        now_wall = time.time()
+        if now_wall - last_flush_wall >= 1.0:
+            last_flush_wall = now_wall
+            with open(LOG_FILE, "w", encoding="utf-8") as f:
+                f.write(",".join(HEADER_FIELDS) + "\n")
+                f.write("\n".join(csv_buffer))
 
         if packets_rcvd % 100 == 0:
             print(f"[listener] Received {packets_rcvd} packets – csv rows {len(csv_buffer)}")

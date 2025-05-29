@@ -81,3 +81,16 @@ body {
 #es {
     display: none;
 }
+
+.swipe-container {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+}
+
+.swipe-page {
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+}
+

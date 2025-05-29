@@ -318,17 +318,19 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                     y=[],
                                                     mode="lines",
                                                     name="actual_torque",
+                                                    line=dict(width=4, color="#0B74FF"),
                                                 )
                                             ],
                                             layout=dict(
                                                 yaxis=dict(
                                                     range=[-5, 15],
                                                     title="Actual Torque",
-                                                    gridcolor="#cccccc",
+                                                    gridcolor="#EEF1F4",
+                                                    gridwidth=1,
                                                     tickfont=dict(size=16),
                                                 ),
                                                 xaxis=dict(
-                                                    gridcolor="#cccccc",
+                                                    showgrid=False,
                                                     tickfont=dict(size=16),
                                                 ),
                                                 title=None,
@@ -352,17 +354,19 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                     y=[],
                                                     mode="lines",
                                                     name="ankle_angle",
+                                                    line=dict(width=4, color="#12C37E"),
                                                 )
                                             ],
                                             layout=dict(
                                                 yaxis=dict(
                                                     range=[-60, 60],
                                                     title="Ankle Angle (deg)",
-                                                    gridcolor="#cccccc",
+                                                    gridcolor="#EEF1F4",
+                                                    gridwidth=1,
                                                     tickfont=dict(size=16),
                                                 ),
                                                 xaxis=dict(
-                                                    gridcolor="#cccccc",
+                                                    showgrid=False,
                                                     tickfont=dict(size=16),
                                                 ),
                                                 title=None,
@@ -396,6 +400,15 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                     y=[],
                                                     mode="lines",
                                                     name=f"pressure_{i}",
+                                                    line=(
+                                                        dict(width=4, color="#0B74FF")
+                                                        if i == 1
+                                                        else (
+                                                            dict(width=4, color="#12C37E")
+                                                            if i == 2
+                                                            else None
+                                                        )
+                                                    ),
                                                 )
                                                 for i in range(1, 9)
                                             ],
@@ -403,11 +416,12 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                 yaxis=dict(
                                                     range=[0, 1000],
                                                     title="Pressure",
-                                                    gridcolor="#cccccc",
+                                                    gridcolor="#EEF1F4",
+                                                    gridwidth=1,
                                                     tickfont=dict(size=16),
                                                 ),
                                                 xaxis=dict(
-                                                    gridcolor="#cccccc",
+                                                    showgrid=False,
                                                     tickfont=dict(size=16),
                                                 ),
                                                 title=None,
@@ -439,6 +453,15 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                     y=[],
                                                     mode="lines",
                                                     name=f"imu_{i}",
+                                                    line=(
+                                                        dict(width=4, color="#0B74FF")
+                                                        if i == 1
+                                                        else (
+                                                            dict(width=4, color="#12C37E")
+                                                            if i == 2
+                                                            else None
+                                                        )
+                                                    ),
                                                 )
                                                 for i in range(1, 4)
                                             ],
@@ -446,11 +469,12 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                                 yaxis=dict(
                                                     range=[-3, 3],
                                                     title="IMU",
-                                                    gridcolor="#cccccc",
+                                                    gridcolor="#EEF1F4",
+                                                    gridwidth=1,
                                                     tickfont=dict(size=16),
                                                 ),
                                                 xaxis=dict(
-                                                    gridcolor="#cccccc",
+                                                    showgrid=False,
                                                     tickfont=dict(size=16),
                                                 ),
                                                 title=None,

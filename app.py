@@ -202,7 +202,6 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
             dcc.Store(id="k-state", data=0),
             dcc.Interval(id="zero-interval", interval=100, n_intervals=0),
             EventSource(id="es", url="/events"),
-            html.Hr(),
             html.Div(
                 className="plots",
                 children=[
@@ -221,8 +220,8 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                 ),
                                 xaxis=dict(gridcolor="#cccccc", tickfont=dict(size=12)),
                                 title=None,
-                                plot_bgcolor="rgba(0,0,0,0)",
-                                paper_bgcolor="rgba(0,0,0,0)",
+                                plot_bgcolor="rgba(240,240,240,0.4)",
+                                paper_bgcolor="rgba(240,240,240,0.4)",
                                 font=dict(family="IBM Plex Sans Condensed", size=14),
                             ),
                         ),
@@ -238,7 +237,7 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                             layout=dict(
                                 yaxis=dict(
                                     range=[0, 1000],
-                                    title="Pressure (N)",
+                                    title="Pressure",
                                     gridcolor="#cccccc",
                                     tickfont=dict(size=12),
                                 ),
@@ -252,8 +251,8 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
                                     x=0,
                                 ),
                                 margin=dict(t=60),
-                                plot_bgcolor="rgba(0,0,0,0)",
-                                paper_bgcolor="rgba(0,0,0,0)",
+                                plot_bgcolor="rgba(240,240,240,0.4)",
+                                paper_bgcolor="rgba(240,240,240,0.4)",
                                 font=dict(family="IBM Plex Sans Condensed", size=14),
                             ),
                         ),

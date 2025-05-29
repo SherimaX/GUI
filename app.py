@@ -292,105 +292,171 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
             dcc.Interval(id="zero-interval", interval=100, n_intervals=0),
             html.Div(EventSource(id="es", url="/events"), style={"display": "none"}),
             html.Div(
-                className="plots",
+                className="swipe-container",
                 children=[
-                    dcc.Graph(
-                        id="torque",
-                        figure=go.Figure(
-                            data=[go.Scatter(x=[], y=[], mode="lines", name="actual_torque")],
-                            layout=dict(
-                                yaxis=dict(
-                                    range=[-5, 15],
-                                    title="Actual Torque",
-                                    gridcolor="#cccccc",
-                                    tickfont=dict(size=16),
-                                ),
-                                xaxis=dict(gridcolor="#cccccc", tickfont=dict(size=16)),
-                                title=None,
-                                plot_bgcolor="rgba(0,0,0,0)",
-                                paper_bgcolor="rgba(0,0,0,0)",
-                                font=dict(family="IBM Plex Sans Condensed", size=18),
-                            ),
-                        ),
-                        config={"displayModeBar": False, "staticPlot": True},
+                    html.Div(
+                        className="swipe-page",
+                        children=[
+                            html.Div(
+                                className="plots",
+                                children=[
+                                    dcc.Graph(
+                                        id="torque",
+                                        figure=go.Figure(
+                                            data=[
+                                                go.Scatter(
+                                                    x=[],
+                                                    y=[],
+                                                    mode="lines",
+                                                    name="actual_torque",
+                                                )
+                                            ],
+                                            layout=dict(
+                                                yaxis=dict(
+                                                    range=[-5, 15],
+                                                    title="Actual Torque",
+                                                    gridcolor="#cccccc",
+                                                    tickfont=dict(size=16),
+                                                ),
+                                                xaxis=dict(
+                                                    gridcolor="#cccccc",
+                                                    tickfont=dict(size=16),
+                                                ),
+                                                title=None,
+                                                plot_bgcolor="rgba(0,0,0,0)",
+                                                paper_bgcolor="rgba(0,0,0,0)",
+                                                font=dict(
+                                                    family="IBM Plex Sans Condensed",
+                                                    size=18,
+                                                ),
+                                            ),
+                                        ),
+                                        config={"displayModeBar": False, "staticPlot": True},
+                                    ),
+                                    dcc.Graph(
+                                        id="ankle",
+                                        figure=go.Figure(
+                                            data=[
+                                                go.Scatter(
+                                                    x=[],
+                                                    y=[],
+                                                    mode="lines",
+                                                    name="ankle_angle",
+                                                )
+                                            ],
+                                            layout=dict(
+                                                yaxis=dict(
+                                                    range=[-60, 60],
+                                                    title="Ankle Angle (deg)",
+                                                    gridcolor="#cccccc",
+                                                    tickfont=dict(size=16),
+                                                ),
+                                                xaxis=dict(
+                                                    gridcolor="#cccccc",
+                                                    tickfont=dict(size=16),
+                                                ),
+                                                title=None,
+                                                plot_bgcolor="rgba(0,0,0,0)",
+                                                paper_bgcolor="rgba(0,0,0,0)",
+                                                font=dict(
+                                                    family="IBM Plex Sans Condensed",
+                                                    size=18,
+                                                ),
+                                            ),
+                                        ),
+                                        config={"displayModeBar": False, "staticPlot": True},
+                                    ),
+                                ],
+                            )
+                        ],
                     ),
-                    dcc.Graph(
-                        id="ankle",
-                        figure=go.Figure(
-                            data=[
-                                go.Scatter(x=[], y=[], mode="lines", name="ankle_angle")
-                            ],
-                            layout=dict(
-                                yaxis=dict(
-                                    range=[-60, 60],
-                                    title="Ankle Angle (deg)",
-                                    gridcolor="#cccccc",
-                                    tickfont=dict(size=16),
-                                ),
-                                xaxis=dict(gridcolor="#cccccc", tickfont=dict(size=16)),
-                                title=None,
-                                plot_bgcolor="rgba(0,0,0,0)",
-                                paper_bgcolor="rgba(0,0,0,0)",
-                                font=dict(family="IBM Plex Sans Condensed", size=18),
-                            ),
-                        ),
-                        config={"displayModeBar": False, "staticPlot": True},
-                    ),
-                    dcc.Graph(
-                        id="press",
-                        figure=go.Figure(
-                            data=[
-                                go.Scatter(x=[], y=[], mode="lines", name=f"pressure_{i}")
-                                for i in range(1, 9)
-                            ],
-                            layout=dict(
-                                yaxis=dict(
-                                    range=[0, 1000],
-                                    title="Pressure",
-                                    gridcolor="#cccccc",
-                                    tickfont=dict(size=16),
-                                ),
-                                xaxis=dict(gridcolor="#cccccc", tickfont=dict(size=16)),
-                                title=None,
-                                legend=dict(
-                                    orientation="h",
-                                    yanchor="bottom",
-                                    y=1.02,
-                                    xanchor="left",
-                                    x=0,
-                                ),
-                                margin=dict(t=60),
-                                plot_bgcolor="rgba(0,0,0,0)",
-                                paper_bgcolor="rgba(0,0,0,0)",
-                                font=dict(family="IBM Plex Sans Condensed", size=18),
-                            ),
-                        ),
-                        config={"displayModeBar": False, "staticPlot": True},
-                    ),
-                    dcc.Graph(
-                        id="imu",
-                        figure=go.Figure(
-                            data=[
-                                go.Scatter(x=[], y=[], mode="lines", name=f"imu_{i}")
-                                for i in range(1, 4)
-                            ],
-                            layout=dict(
-                                yaxis=dict(
-                                    range=[-3, 3],
-                                    title="IMU",
-                                    gridcolor="#cccccc",
-                                    tickfont=dict(size=16),
-                                ),
-                                xaxis=dict(gridcolor="#cccccc", tickfont=dict(size=16)),
-                                title=None,
-                                legend=dict(orientation="h"),
-                                margin=dict(t=60),
-                                plot_bgcolor="rgba(0,0,0,0)",
-                                paper_bgcolor="rgba(0,0,0,0)",
-                                font=dict(family="IBM Plex Sans Condensed", size=18),
-                            ),
-                        ),
-                        config={"displayModeBar": False, "staticPlot": True},
+                    html.Div(
+                        className="swipe-page",
+                        children=[
+                            html.Div(
+                                className="plots",
+                                children=[
+                                    dcc.Graph(
+                                        id="press",
+                                        figure=go.Figure(
+                                            data=[
+                                                go.Scatter(
+                                                    x=[],
+                                                    y=[],
+                                                    mode="lines",
+                                                    name=f"pressure_{i}",
+                                                )
+                                                for i in range(1, 9)
+                                            ],
+                                            layout=dict(
+                                                yaxis=dict(
+                                                    range=[0, 1000],
+                                                    title="Pressure",
+                                                    gridcolor="#cccccc",
+                                                    tickfont=dict(size=16),
+                                                ),
+                                                xaxis=dict(
+                                                    gridcolor="#cccccc",
+                                                    tickfont=dict(size=16),
+                                                ),
+                                                title=None,
+                                                legend=dict(
+                                                    orientation="h",
+                                                    yanchor="bottom",
+                                                    y=1.02,
+                                                    xanchor="left",
+                                                    x=0,
+                                                ),
+                                                margin=dict(t=60),
+                                                plot_bgcolor="rgba(0,0,0,0)",
+                                                paper_bgcolor="rgba(0,0,0,0)",
+                                                font=dict(
+                                                    family="IBM Plex Sans Condensed",
+                                                    size=18,
+                                                ),
+                                            ),
+                                        ),
+                                        config={"displayModeBar": False, "staticPlot": True},
+                                    ),
+                                    dcc.Graph(
+                                        id="imu",
+                                        figure=go.Figure(
+                                            data=[
+                                                go.Scatter(
+                                                    x=[],
+                                                    y=[],
+                                                    mode="lines",
+                                                    name=f"imu_{i}",
+                                                )
+                                                for i in range(1, 4)
+                                            ],
+                                            layout=dict(
+                                                yaxis=dict(
+                                                    range=[-3, 3],
+                                                    title="IMU",
+                                                    gridcolor="#cccccc",
+                                                    tickfont=dict(size=16),
+                                                ),
+                                                xaxis=dict(
+                                                    gridcolor="#cccccc",
+                                                    tickfont=dict(size=16),
+                                                ),
+                                                title=None,
+                                                legend=dict(orientation="h"),
+                                                margin=dict(t=60),
+                                                plot_bgcolor="rgba(0,0,0,0)",
+                                                paper_bgcolor="rgba(0,0,0,0)",
+                                                font=dict(
+                                                    family="IBM Plex Sans Condensed",
+                                                    size=18,
+                                                ),
+                                            ),
+                                        ),
+                                        config={"displayModeBar": False, "staticPlot": True},
+                                    ),
+                                ],
+                            )
+                        ],
                     ),
                 ],
             ),

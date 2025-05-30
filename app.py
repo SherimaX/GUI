@@ -20,8 +20,7 @@ from __future__ import annotations
 import struct
 import threading
 import time
-import collections
-from typing import Dict, Any, Deque, List
+from typing import Dict, Any
 import platform
 import subprocess
 import math
@@ -50,29 +49,20 @@ COLOR_CYCLE = [
     "#7F7F7F",
 ]
 
+# Configuration constants
 CONFIG_FILE = "config.yaml"
 CONTROL_FMT = "<4f"  # zero, motor, assist, k  (4 × float32 = 16 bytes)
-HISTORY = 5000  # number of samples to keep for plotting (increased)
-# Send SSE batches every 10 ms so the frontend receives data at ~SAMPLE_RATE_HZ Hz
-UPDATE_MS = 10  # throttle SSE updates to this interval (ms)
+# Unused legacy constant retained for compatibility
+HISTORY = 1000  # currently unused
+# Throttle SSE updates to roughly the incoming sample rate
+UPDATE_MS = 10
 N_WINDOW_SEC = 10  # how many seconds of data to show in plots
 SAMPLE_RATE_HZ = 100  # expected UDP sample rate
 max_points = int(N_WINDOW_SEC * SAMPLE_RATE_HZ)
 
-# Shared state for plotting (producer: UDP listener, consumer: Dash callback)
-plot_lock = threading.Lock()
-plot_state: Dict[str, Any] = {
-    "times": collections.deque(maxlen=max_points),
-    "ankle": collections.deque(maxlen=max_points),
-    "torque": collections.deque(maxlen=max_points),
-    "gait": collections.deque(maxlen=max_points),
-    "pressures": {i: collections.deque(maxlen=max_points) for i in range(1, 9)},
-    "imus": {i: collections.deque(maxlen=max_points) for i in range(1, 13)},
-}
-
-# Queue for server-sent events (SSE) to push fresh samples to the browser
-# Keep only the newest `max_points` samples (~N_WINDOW_SEC seconds at SAMPLE_RATE_HZ)
-event_q: Queue = Queue(maxsize=max_points)
+# Queue for server-sent events (SSE) to push fresh samples to the browser.
+# Only a single sample is stored; the browser keeps its own circular buffer.
+event_q: Queue = Queue(maxsize=1)
 
 # Limit concurrent SSE clients
 MAX_CLIENTS = 5
@@ -146,13 +136,11 @@ def send_control_packet(
 
 
 # --------------------------------------------------------------------------------------
-# Background UDP listener (fills a deque with decoded packets)
+# Background UDP listener (pushes decoded packets to the SSE queue)
 # --------------------------------------------------------------------------------------
 
 
-def start_udp_listener(
-    cfg: Dict[str, Any], buffer: Deque[Dict[str, float]]
-) -> None:
+def start_udp_listener(cfg: Dict[str, Any]) -> None:
     fmt = cfg["packet"]["format"]
     expected = struct.calcsize(fmt)
     mapping = cfg["signals"]
@@ -189,18 +177,6 @@ def start_udp_listener(
         ankle = decoded.get("ankle_angle", 0.0)
         torque = decoded.get("actual_torque", 0.0)
         gait = decoded.get("gait_percentage", 0.0)
-        buffer.append(decoded)
-
-        # Update in-memory plots
-        with plot_lock:
-            plot_state["times"].append(sim_t)
-            plot_state["ankle"].append(ankle)
-            plot_state["torque"].append(torque)
-            plot_state["gait"].append(gait)
-            for i in range(1, 9):
-                plot_state["pressures"][i].append(decoded.get(f"pressure_{i}", 0.0))
-            for i in range(1, 13):
-                plot_state["imus"][i].append(decoded.get(f"imu_{i}", 0.0))
 
 
         # ------------------------------------------------------------------
@@ -228,9 +204,7 @@ def start_udp_listener(
 
 
 
-def start_fake_data(
-    cfg: Dict[str, Any], buffer: Deque[Dict[str, float]]
-) -> None:
+def start_fake_data(cfg: Dict[str, Any]) -> None:
     """Generate synthetic samples when the Simulink host is unreachable."""
     print("Simulink host unreachable – using fake data generator")
     t = 0.0
@@ -244,56 +218,22 @@ def start_fake_data(
         gait = (t % 1.0) * 100.0
 
         sample = {
-            "time": t,
-            "ankle_angle": ankle,
-            "actual_torque": torque,
-            "gait_percentage": gait,
+            "t": t,
+            "ankle": ankle,
+            "torque": torque,
+            "gait": gait,
+            "press": pressures,
+            "imu": imus,
         }
-        for i, p in enumerate(pressures, 1):
-            sample[f"pressure_{i}"] = p
-        for i, val in enumerate(imus, 1):
-            sample[f"imu_{i}"] = val
-
-        buffer.append(sample)
-
-        with plot_lock:
-            plot_state["times"].append(t)
-            plot_state["ankle"].append(ankle)
-            plot_state["torque"].append(torque)
-            plot_state["gait"].append(gait)
-            for i, p in enumerate(pressures, 1):
-                plot_state["pressures"][i].append(p)
-            for i, val in enumerate(imus, 1):
-                plot_state["imus"][i].append(val)
-
-
         try:
-            event_q.put_nowait(
-                {
-                    "t": t,
-                    "ankle": ankle,
-                    "torque": torque,
-                    "gait": gait,
-                    "press": pressures,
-                    "imu": imus,
-                }
-            )
+            event_q.put_nowait(sample)
         except Full:
             try:
                 event_q.get_nowait()
             except Exception:
                 pass
             try:
-                event_q.put_nowait(
-                    {
-                        "t": t,
-                        "ankle": ankle,
-                        "torque": torque,
-                        "gait": gait,
-                        "press": pressures,
-                        "imu": imus,
-                    }
-                )
+                event_q.put_nowait(sample)
             except Exception:
                 pass
 
@@ -306,7 +246,7 @@ def start_fake_data(
 # --------------------------------------------------------------------------------------
 
 
-def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> dash.Dash:
+def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
     """Create and configure the Dash application."""
     # Serve JS/CSS assets locally so the dashboard works without Internet
     # access. ``serve_locally`` is available on newer Dash versions but we
@@ -772,46 +712,12 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
         def generate():
             try:
                 global _active_clients
-                # Drop all but the newest max_points samples so the client isn't flooded
-                while event_q.qsize() > max_points:
-                    try:
-                        event_q.get_nowait()
-                    except Exception:
-                        break
-                batch: List[Dict[str, float]] = []
-                last_emit = time.time()
                 while True:
-                    # ensure the queue never grows beyond max_points samples
-                    while event_q.qsize() > max_points:
-                        try:
-                            event_q.get_nowait()
-                        except Exception:
-                            break
-
-                    item = event_q.get()
-                    batch.append(item)
-
-                    # pull everything that's waiting so we send compact batches
-                    while not event_q.empty() and len(batch) < 50:
-                        batch.append(event_q.get())
-
-                    now = time.time()
-                    if now - last_emit >= UPDATE_MS / 1000.0:
-                        payload = {
-                            "t": [s["t"] for s in batch],
-                            "ankle": [s["ankle"] for s in batch],
-                            "torque": [s["torque"] for s in batch],
-                            "gait": [s.get("gait", 0.0) for s in batch],
-                            "press": [s["press"] for s in batch],
-                            "imu": [s["imu"] for s in batch],
-                        }
-                        batch.clear()
-                        last_emit = now
-                        yield f"data:{json.dumps(payload)}\n\n"
+                    sample = event_q.get()
+                    yield f"data:{json.dumps(sample)}\n\n"
             finally:
                 with _client_lock:
                     _active_clients -= 1
-                # Removed verbose console output for SSE client disconnection.
 
         return Response(generate(), mimetype="text/event-stream")
 
@@ -859,8 +765,6 @@ def build_dash_app(cfg: Dict[str, Any], data_buf: Deque[Dict[str, float]]) -> da
 if __name__ == "__main__":
     cfg = load_config()
 
-    data_queue: Deque[Dict[str, float]] = collections.deque(maxlen=HISTORY)
-
     # Spin up the UDP listener, falling back to a fake data generator if the
     # Simulink host cannot be reached.
     target_fn = start_udp_listener
@@ -869,31 +773,12 @@ if __name__ == "__main__":
 
     listener_t = threading.Thread(
         target=target_fn,
-        args=(cfg, data_queue),
+        args=(cfg,),
         daemon=True,
         )
     listener_t.start()
 
-    # ------------------------------------------------------------------
-    # Debug helper: every 10 s print the time stamps currently in the plot
-    # ------------------------------------------------------------------
-
-    def _debug_print_times():
-        while True:
-            time.sleep(10)
-            with plot_lock:
-                times_snapshot = list(plot_state["times"])
-            if times_snapshot:
-                print(
-                    f"[DEBUG] Plot time range: {times_snapshot[0]:.2f}s → {times_snapshot[-1]:.2f}s "
-                    f"({len(times_snapshot)} samples)"
-                )
-            else:
-                print("[DEBUG] Plot time buffer is empty")
-
-    threading.Thread(target=_debug_print_times, daemon=True).start()
-
-    dash_app = build_dash_app(cfg, data_queue)
+    dash_app = build_dash_app(cfg)
     dash_app.run(
         host="127.0.0.1",
         port=8050,

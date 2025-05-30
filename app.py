@@ -538,6 +538,11 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                     )
                 ],
             ),
+            html.Pre(
+                id="debug-msg",
+                children="Waiting for data...",
+                style={"whiteSpace": "pre-wrap", "color": "#aa0000"},
+            ),
         ],
     )
 
@@ -645,6 +650,20 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         if btn == "window-10-btn":
             return 10
         return current
+
+    @app.callback(
+        Output("debug-msg", "children"),
+        Input("es", "message"),
+        prevent_initial_call=False,
+    )
+    def update_debug(msg):
+        if not msg:
+            return dash.no_update
+        if isinstance(msg, dict):
+            data = msg.get("data", msg)
+        else:
+            data = getattr(msg, "data", msg)
+        return str(data)
 
     # ------------------------------------------------------------------
     # Client-side callback: Update graphs for each SSE batch

@@ -58,7 +58,6 @@ HISTORY = 1000  # currently unused
 UPDATE_MS = 10
 N_WINDOW_SEC = 10  # how many seconds of data to show in plots
 SAMPLE_RATE_HZ = 100  # expected UDP sample rate
-max_points = int(N_WINDOW_SEC * SAMPLE_RATE_HZ)
 
 # Queue for server-sent events (SSE) to push fresh samples to the browser.
 # Only a single sample is stored; the browser keeps its own circular buffer.
@@ -284,6 +283,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             dcc.Store(id="motor-state", data=0),
             dcc.Store(id="assist-state", data=0),
             dcc.Store(id="k-state", data=0),
+            dcc.Store(id="window-sec", data=N_WINDOW_SEC),
             html.Div(id="signal-sent", style={"display": "none"}),
             dcc.Interval(id="zero-interval", interval=100, n_intervals=0),
             dcc.Interval(id="tab-interval", interval=1000, n_intervals=0),
@@ -528,6 +528,13 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                             html.Button("assist", id="assist-btn", n_clicks=0),
                             html.Button("k", id="k-btn", n_clicks=0),
                         ],
+                    ),
+                    html.Div(
+                        className="controls",
+                        children=[
+                            html.Button("2s", id="window-2-btn", n_clicks=0),
+                            html.Button("10s", id="window-10-btn", n_clicks=0),
+                        ],
                     )
                 ],
             ),
@@ -621,11 +628,29 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         send_control_packet(cfg, zero_state, motor_state, assist_state, k_state)
         return ""
 
+    @app.callback(
+        Output("window-sec", "data"),
+        Input("window-2-btn", "n_clicks"),
+        Input("window-10-btn", "n_clicks"),
+        State("window-sec", "data"),
+        prevent_initial_call=True,
+        )
+    def update_window(n2, n10, current):
+        ctx = dash.callback_context
+        if not ctx.triggered:
+            return current
+        btn = ctx.triggered[0]["prop_id"].split(".")[0]
+        if btn == "window-2-btn":
+            return 2
+        if btn == "window-10-btn":
+            return 10
+        return current
+
     # ------------------------------------------------------------------
     # Client-side callback: Update graphs for each SSE batch
     # ------------------------------------------------------------------
     graph_update_js = string.Template(r"""
-        function(msg){
+        function(msg, window_sec){
             if(!msg){ return [null, null, null, null, null]; }
 
             var json_str = (typeof msg === 'string') ? msg : (msg && msg.data);
@@ -700,10 +725,13 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             }
             var btn_style = {backgroundColor: color, color: textColorFor(color)};
 
-            // Slide x-axis window to show only the last 10 seconds
+            var winSec = (typeof window_sec === 'number') ? window_sec : ${default_window};
+            var maxPoints = Math.round(winSec * ${sample_rate});
+
+            // Slide x-axis window to show only the last window_sec seconds
             var latestT = t[t.length - 1];
             if(typeof latestT !== 'number') latestT = Number(latestT);
-            var xrange = [latestT - 10.0, latestT];
+            var xrange = [latestT - winSec, latestT];
 
             // Apply relayout on each graph individually (if already rendered)
             ['torque', 'ankle', 'gait', 'press', 'imu'].forEach(function(id) {
@@ -716,15 +744,15 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             });
 
             return [
-                [torque_payload, [0], ${max_points}],
-                [ankle_payload, [0], ${max_points}],
-                [gait_payload, [0], ${max_points}],
-                [press_payload, [0,2,4,6,8,10,12,14], ${max_points}],
-                [imu_payload, [0,2,4], ${max_points}],
+                [torque_payload, [0], maxPoints],
+                [ankle_payload, [0], maxPoints],
+                [gait_payload, [0], maxPoints],
+                [press_payload, [0,2,4,6,8,10,12,14], maxPoints],
+                [imu_payload, [0,2,4], maxPoints],
                 btn_style
             ];
         }
-        """).substitute(max_points=max_points)
+        """).substitute(sample_rate=SAMPLE_RATE_HZ, default_window=N_WINDOW_SEC)
 
     app.clientside_callback(
         graph_update_js,
@@ -735,6 +763,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         Output("imu", "extendData"),
         Output("motor-btn", "style"),
         Input("es", "message"),
+        Input("window-sec", "data"),
         prevent_initial_call=True,
         )
 

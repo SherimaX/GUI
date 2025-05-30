@@ -712,18 +712,23 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                         }
                     });
                 }
-                return [null, null, null, null, null, null];
+                var tickVals = [];
+                document.querySelectorAll('#torque .xtick text').forEach(function(el){
+                    if(el && el.textContent) tickVals.push(el.textContent.trim());
+                });
+                var debugTxt = tickVals.length ? 'xticks=[' + tickVals.join(', ') + ']' : '';
+                return [null, null, null, null, null, null, debugTxt];
             }
 
             var json_str = (typeof msg === 'string') ? msg : (msg && msg.data);
-            if(!json_str){ return [null, null, null, null, null, null]; }
+            if(!json_str){ return [null, null, null, null, null, null, '']; }
 
             var payload;
             try {
                 payload = JSON.parse(json_str);
             } catch(e){
                 console.error('failed to parse SSE payload', e);
-                return [null, null, null, null, null, null];
+                return [null, null, null, null, null, null, ''];
             }
 
             var t = payload.t;
@@ -809,6 +814,13 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                 }
             });
             var debugTxt = "winSec=" + winSec + " xrange=[" + xrange[0].toFixed(2) + ", " + xrange[1].toFixed(2) + "] maxPts=" + maxPoints;
+            var tickVals2 = [];
+            document.querySelectorAll('#torque .xtick text').forEach(function(el){
+                if(el && el.textContent) tickVals2.push(el.textContent.trim());
+            });
+            if(tickVals2.length) {
+                debugTxt += " xticks=[" + tickVals2.join(', ') + "]";
+            }
             if(typeof avg_dt === 'number'){
                 debugTxt += " avgDt=" + avg_dt.toFixed(5);
             }

@@ -189,6 +189,7 @@ def start_udp_listener(cfg: Dict[str, Any]) -> None:
             "gait": gait,
             "press": [decoded.get(f"pressure_{i}", 0.0) for i in range(1, 9)],
             "imu": [decoded.get(f"imu_{i}", 0.0) for i in range(1, 13)],
+            "statusword": decoded.get("statusword", 0.0),
         }
         try:
             event_q.put_nowait(sample)
@@ -224,6 +225,7 @@ def start_fake_data(cfg: Dict[str, Any]) -> None:
             "gait": gait,
             "press": pressures,
             "imu": imus,
+            "statusword": 1591,
         }
         try:
             event_q.put_nowait(sample)
@@ -615,14 +617,14 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             if(!msg){ return [null, null, null, null, null]; }
 
             var json_str = (typeof msg === 'string') ? msg : (msg && msg.data);
-            if(!json_str){ return [null, null, null, null, null]; }
+            if(!json_str){ return [null, null, null, null, null, null]; }
 
             var payload;
             try {
                 payload = JSON.parse(json_str);
             } catch(e){
                 console.error('failed to parse SSE payload', e);
-                return [null, null, null, null, null];
+                return [null, null, null, null, null, null];
             }
 
             var t = payload.t;
@@ -631,6 +633,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             var gait = payload.gait;
             var press = payload.press;
             var imu = payload.imu;
+            var status = payload.statusword;
 
             if(!Array.isArray(t)) t = [t];
             if(!Array.isArray(ankle)) ankle = [ankle];
@@ -659,6 +662,16 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             var press_payload = {x:Array(8).fill(t), y:pressT};
             var imu_payload = {x:Array(3).fill(t), y:imuT};
 
+            var color = 'grey';
+            if(status === 999){
+                color = 'orange';
+            } else if(status === 1544 || status === 520){
+                color = 'red';
+            } else if(status === 1591){
+                color = 'green';
+            }
+            var btn_style = {backgroundColor: color};
+
             // Slide x-axis window to show only the last 10 seconds
             var latestT = t[t.length - 1];
             if(typeof latestT !== 'number') latestT = Number(latestT);
@@ -679,7 +692,8 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                 [ankle_payload, [0], ${max_points}],
                 [gait_payload, [0], ${max_points}],
                 [press_payload, [0,2,4,6,8,10,12,14], ${max_points}],
-                [imu_payload, [0,2,4], ${max_points}]
+                [imu_payload, [0,2,4], ${max_points}],
+                btn_style
             ];
         }
         """).substitute(max_points=max_points)
@@ -691,6 +705,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         Output("gait", "extendData"),
         Output("press", "extendData"),
         Output("imu", "extendData"),
+        Output("motor-btn", "style"),
         Input("es", "message"),
         prevent_initial_call=True,
         )

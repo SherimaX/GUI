@@ -54,4 +54,4 @@ signals:
   heel_strike: 26
   assistance_level: 27
   estimated_ankle_moment: 28
-  empty: 29
+  statusword: 29

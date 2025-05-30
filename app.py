@@ -8,7 +8,7 @@ Features implemented:
 4. Live chart of actual torque and the first 3 IMU channels.
 
 Run:
-    python app.py  # then open http://127.0.0.1:8050 in a browser
+    python app.py  # then open http://192.168.7.15:8050 in a browser
 
 Make sure Simulink is broadcasting the 112-byte data packets defined in
 `config.yaml`. The app listens on the configured port and updates at
@@ -260,7 +260,10 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
     # Include a meta tag so the site can be added to the iPad/iOS home screen
     # without Safari chrome. This enables the "Add to Home Screen" feature to
     # launch the dashboard as a standalone web app.
-    meta = [{"name": "apple-mobile-web-app-capable", "content": "yes"}]
+    meta = [
+        {"name": "apple-mobile-web-app-capable", "content": "yes"},
+        {"name": "viewport", "content": "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"},
+    ]
     app = dash.Dash(
         __name__,
         serve_locally=True,
@@ -820,7 +823,7 @@ if __name__ == "__main__":
 
     dash_app = build_dash_app(cfg)
     dash_app.run(
-        host="127.0.0.1",
+        host="192.168.7.15",
         port=8050,
         debug=False,
         use_reloader=False,

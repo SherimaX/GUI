@@ -86,7 +86,7 @@ pip install -r requirements.txt
    ```bash
    python app.py  # auto-reloads in development
    ```
-7. Open `http://127.0.0.1:8050` in your browser. You should see live plots once Simulink starts streaming.
+7. Open `http://192.168.7.15:8050` in your browser. You should see live plots once Simulink starts streaming.
 8. If the Simulink board is unreachable the app automatically generates fake
    data so you can exercise the dashboard offline.
 9. Incoming data is kept in memory only—nothing is written to CSV.

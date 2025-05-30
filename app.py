@@ -823,7 +823,8 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             var btn_style = {backgroundColor: color, color: textColorFor(color)};
 
             var winSec = (typeof window_sec === 'number') ? window_sec : ${default_window};
-            var maxPoints = Math.round(winSec * ${sample_rate});
+            var dt = (typeof avg_dt === 'number') ? avg_dt : 1.0/${sample_rate};
+            var maxPoints = Math.round(winSec / dt);
 
             // Slide x-axis window to show only the last window_sec seconds
             var latestT = t[t.length - 1];
@@ -842,7 +843,9 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                     } catch(e) { /* ignore before initial render */ }
                 }
             });
-            var debugTxt = "winSec=" + winSec + " xrange=[" + xrange[0].toFixed(2) + ", " + xrange[1].toFixed(2) + "] maxPts=" + maxPoints;
+            var debugTxt = "winSec=" + winSec +
+                " xrange=[" + xrange[0].toFixed(2) + ", " + xrange[1].toFixed(2) + "]" +
+                " maxPts=" + maxPoints + " dt=" + dt.toFixed(5);
             if(typeof avg_dt === 'number'){
                 debugTxt += " avgDt=" + avg_dt.toFixed(5);
             }

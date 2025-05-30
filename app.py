@@ -161,6 +161,10 @@ def start_udp_listener(cfg: Dict[str, Any]) -> None:
         )
 
 
+    prev_t: float | None = None
+    avg_dt: float = 0.0
+    count: int = 0
+
     while True:
         try:
             data, _ = sock.recvfrom(expected)
@@ -181,6 +185,12 @@ def start_udp_listener(cfg: Dict[str, Any]) -> None:
         # ------------------------------------------------------------------
         # Push latest sample to SSE queue (non-blocking)
         # ------------------------------------------------------------------
+        if prev_t is not None:
+            dt = sim_t - prev_t
+            avg_dt = (avg_dt * count + dt) / (count + 1)
+            count += 1
+        prev_t = sim_t
+
         sample = {
             "t": sim_t,
             "ankle": ankle,
@@ -189,6 +199,7 @@ def start_udp_listener(cfg: Dict[str, Any]) -> None:
             "press": [decoded.get(f"pressure_{i}", 0.0) for i in range(1, 9)],
             "imu": [decoded.get(f"imu_{i}", 0.0) for i in range(1, 13)],
             "statusword": decoded.get("statusword", 0.0),
+            "avg_dt": avg_dt,
         }
         try:
             event_q.put_nowait(sample)
@@ -208,6 +219,9 @@ def start_fake_data(cfg: Dict[str, Any]) -> None:
     """Generate synthetic samples when the Simulink host is unreachable."""
     print("Simulink host unreachable – using fake data generator")
     t = 0.0
+    prev_t: float | None = None
+    avg_dt: float = 0.0
+    count: int = 0
     # match the expected sample rate
     dt = 1.0 / SAMPLE_RATE_HZ
     while True:
@@ -217,6 +231,12 @@ def start_fake_data(cfg: Dict[str, Any]) -> None:
         imus = [math.sin(t + i * 0.1) for i in range(12)]
         gait = (t % 1.0) * 100.0
 
+        if prev_t is not None:
+            dt_sample = t - prev_t
+            avg_dt = (avg_dt * count + dt_sample) / (count + 1)
+            count += 1
+        prev_t = t
+
         sample = {
             "t": t,
             "ankle": ankle,
@@ -225,6 +245,7 @@ def start_fake_data(cfg: Dict[str, Any]) -> None:
             "press": pressures,
             "imu": imus,
             "statusword": 1591,
+            "avg_dt": avg_dt,
         }
         try:
             event_q.put_nowait(sample)
@@ -709,6 +730,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             var press = payload.press;
             var imu = payload.imu;
             var status = payload.statusword;
+            var avg_dt = payload.avg_dt;
 
             if(!Array.isArray(t)) t = [t];
             if(!Array.isArray(ankle)) ankle = [ankle];
@@ -781,6 +803,9 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                 }
             });
             var debugTxt = "winSec=" + winSec + " xrange=[" + xrange[0].toFixed(2) + ", " + xrange[1].toFixed(2) + "] maxPts=" + maxPoints;
+            if(typeof avg_dt === 'number'){
+                debugTxt += " avgDt=" + avg_dt.toFixed(5);
+            }
             return [
                 [torque_payload, [0], maxPoints],
                 [ankle_payload, [0], maxPoints],

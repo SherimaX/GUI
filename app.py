@@ -745,18 +745,18 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                         }
                     });
                 }
-                return [null, null, null, null, null, null, null];
+                return [null, null, null, null, null, null, null, null];
             }
 
             var json_str = (typeof msg === 'string') ? msg : (msg && msg.data);
-            if(!json_str){ return [null, null, null, null, null, null, null]; }
+            if(!json_str){ return [null, null, null, null, null, null, null, null]; }
 
             var payload;
             try {
                 payload = JSON.parse(json_str);
             } catch(e){
                 console.error('failed to parse SSE payload', e);
-                return [null, null, null, null, null, null, null];
+                return [null, null, null, null, null, null, null, null];
             }
 
             var t = payload.t;

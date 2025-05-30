@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+/* Use system fonts only so no internet access is required */
 
 .dashboard {
     padding: 10px;
@@ -6,9 +6,10 @@
 
 body {
     background: #ffffff;
-    font-family: 'Inter', sans-serif;
+    font-family: system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
     color: #333333;
     margin: 0;
+    overflow: hidden; /* prevent scrolling on iPad */
 }
 
 button {
@@ -17,7 +18,7 @@ button {
 
 .dashboard h2 {
     text-align: center;
-    font-family: 'Inter', sans-serif;
+    font-family: inherit;
     font-weight: 600;
 }
 .controls-dock {
@@ -138,9 +139,9 @@ button {
 
 .swipe-container {
     display: flex;
-    overflow-x: auto;
+    overflow-x: hidden; /* disable horizontal scrolling */
     overflow-y: visible;
-    scroll-snap-type: x mandatory;
+    scroll-snap-type: none;
     width: 90%;
     margin: 24px auto 24px auto;
     padding: 0;

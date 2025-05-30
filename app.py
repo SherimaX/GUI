@@ -705,15 +705,9 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             return current
         btn = ctx.triggered[0]["prop_id"].split(".")[0]
         if btn == "window-2-btn":
-            # Temporary workaround: the front-end currently shows roughly five
-            # times more data than requested. Until the plotting logic is
-            # corrected, adjust the requested window size down by the same
-            # factor so the visible range matches the button label.
-            return 0.4
-        if btn == "window-10-btn":
-            # See note above – request 2&nbsp;s of data for the "10s" button so
-            # the plot displays about 10&nbsp;s on screen.
             return 2
+        if btn == "window-10-btn":
+            return 10
         return current
 
     @app.callback(
@@ -968,8 +962,13 @@ if __name__ == "__main__":
     listener_t.start()
 
     dash_app = build_dash_app(cfg)
+
+    host_ip = "192.168.7.15"
+    if target_fn is start_fake_data:
+        host_ip = "127.0.0.1"
+
     dash_app.run(
-        host="192.168.7.15",
+        host=host_ip,
         port=8050,
         debug=False,
         use_reloader=False,

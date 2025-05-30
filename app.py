@@ -705,7 +705,10 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                             var xData = gd.data[0].x;
                             var latest = xData[xData.length - 1];
                             if(typeof latest !== 'number') latest = Number(latest);
-                            Plotly.relayout(gd, {'xaxis.range': [latest - window_sec, latest]});
+                            Plotly.relayout(gd, {
+                                'xaxis.autorange': false,
+                                'xaxis.range': [latest - window_sec, latest]
+                            });
                         }
                     });
                 }
@@ -798,7 +801,10 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                 var gd = document.getElementById(id);
                 if(gd) {
                     try {
-                        Plotly.relayout(gd, {'xaxis.range': xrange});
+                        Plotly.relayout(gd, {
+                            'xaxis.autorange': false,
+                            'xaxis.range': xrange
+                        });
                     } catch(e) { /* ignore before initial render */ }
                 }
             });

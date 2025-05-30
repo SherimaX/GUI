@@ -651,7 +651,21 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
     # ------------------------------------------------------------------
     graph_update_js = string.Template(r"""
         function(msg, window_sec){
-            if(!msg){ return [null, null, null, null, null]; }
+            if(!msg){
+                // No new data – adjust x-range using existing points
+                if(typeof window_sec === 'number'){
+                    ['torque','ankle','gait','press','imu'].forEach(function(id){
+                        var gd = document.getElementById(id);
+                        if(gd && gd.data && gd.data.length && gd.data[0].x && gd.data[0].x.length){
+                            var xData = gd.data[0].x;
+                            var latest = xData[xData.length - 1];
+                            if(typeof latest !== 'number') latest = Number(latest);
+                            Plotly.relayout(gd, {'xaxis.range': [latest - window_sec, latest]});
+                        }
+                    });
+                }
+                return [null, null, null, null, null, null];
+            }
 
             var json_str = (typeof msg === 'string') ? msg : (msg && msg.data);
             if(!json_str){ return [null, null, null, null, null, null]; }

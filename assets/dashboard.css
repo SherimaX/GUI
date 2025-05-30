@@ -139,8 +139,8 @@ button {
 
 .swipe-container {
     display: flex;
-    overflow-x: hidden; /* disable horizontal scrolling */
-    overflow-y: visible;
+    overflow-x: auto; /* allow horizontal scrolling for tab switch */
+    overflow-y: hidden; /* disable vertical scrolling */
     scroll-snap-type: none;
     width: 90%;
     margin: 24px auto 24px auto;

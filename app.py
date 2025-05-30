@@ -662,15 +662,31 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             var press_payload = {x:Array(8).fill(t), y:pressT};
             var imu_payload = {x:Array(3).fill(t), y:imuT};
 
-            var color = 'grey';
-            if(status === 999){
-                color = 'orange';
-            } else if(status === 1544 || status === 520){
-                color = 'red';
-            } else if(status === 1591){
-                color = 'green';
+            var colorReady = '#FFD280';  // light orange
+            var colorFault = '#FF9E9E';  // light red
+            var colorReached = '#8FE38F'; // light green
+            var colorDefault = '#cccccc';
+
+            function textColorFor(bg){
+                if(!bg || bg.charAt(0) !== '#') return '#000000';
+                var r = parseInt(bg.slice(1,3), 16);
+                var g = parseInt(bg.slice(3,5), 16);
+                var b = parseInt(bg.slice(5,7), 16);
+                var brightness = (r*299 + g*587 + b*114)/1000;
+                return brightness > 150 ? '#000000' : '#ffffff';
             }
-            var btn_style = {backgroundColor: color};
+
+            var color = colorDefault;
+            if(status != null){
+                if(status & 0x0008){ // fault bit
+                    color = colorFault;
+                } else if((status & 0x0002) && (status & 0x0400)){
+                    color = colorReached; // switched on + target reached
+                } else if(status & 0x0001){
+                    color = colorReady; // ready to switch on
+                }
+            }
+            var btn_style = {backgroundColor: color, color: textColorFor(color)};
 
             // Slide x-axis window to show only the last 10 seconds
             var latestT = t[t.length - 1];

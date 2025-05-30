@@ -543,6 +543,11 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                 children="Waiting for data...",
                 style={"whiteSpace": "pre-wrap", "color": "#aa0000"},
             ),
+            html.Pre(
+                id="debug-range",
+                children="",
+                style={"whiteSpace": "pre-wrap", "color": "#0000aa"},
+            ),
         ],
     )
 
@@ -775,14 +780,14 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                     } catch(e) { /* ignore before initial render */ }
                 }
             });
-
+            var debugTxt = "winSec=" + winSec + " xrange=[" + xrange[0].toFixed(2) + ", " + xrange[1].toFixed(2) + "] maxPts=" + maxPoints;
             return [
                 [torque_payload, [0], maxPoints],
                 [ankle_payload, [0], maxPoints],
                 [gait_payload, [0], maxPoints],
                 [press_payload, [0,2,4,6,8,10,12,14], maxPoints],
                 [imu_payload, [0,2,4], maxPoints],
-                btn_style
+                btn_style, debugTxt
             ];
         }
         """).substitute(sample_rate=SAMPLE_RATE_HZ, default_window=N_WINDOW_SEC)
@@ -795,6 +800,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         Output("press", "extendData"),
         Output("imu", "extendData"),
         Output("motor-btn", "style"),
+        Output("debug-range", "children"),
         Input("es", "message"),
         Input("window-sec", "data"),
         prevent_initial_call=True,

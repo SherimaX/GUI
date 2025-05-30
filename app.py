@@ -523,6 +523,39 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                                         ),
                                         config={"displayModeBar": False, "staticPlot": True},
                                     ),
+                                    dcc.Graph(
+                                        id="time-graph",
+                                        style={"height": "360px"},
+                                        figure=go.Figure(
+                                            data=make_line_with_marker(
+                                                "time", "#D62728"
+                                            ),
+                                            layout=dict(
+                                                yaxis=dict(
+                                                    title="Time (s)",
+                                                    gridcolor="#EEF1F4",
+                                                    gridwidth=2,
+                                                    zeroline=True,
+                                                    zerolinecolor="#EEF1F4",
+                                                    zerolinewidth=2,
+                                                    tickfont=dict(size=16),
+                                                ),
+                                                xaxis=dict(
+                                                    showgrid=False,
+                                                    tickfont=dict(size=16),
+                                                ),
+                                                title=None,
+                                                showlegend=False,
+                                                plot_bgcolor="rgba(0,0,0,0)",
+                                                paper_bgcolor="rgba(0,0,0,0)",
+                                                font=dict(
+                                                    family="IBM Plex Sans Condensed",
+                                                    size=18,
+                                                ),
+                                            ),
+                                        ),
+                                        config={"displayModeBar": False, "staticPlot": True},
+                                    ),
                                 ],
                             )
                         ],
@@ -699,7 +732,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             if(!msg){
                 // No new data – adjust x-range using existing points
                 if(typeof window_sec === 'number'){
-                    ['torque','ankle','gait','press','imu'].forEach(function(id){
+                    ['torque','ankle','gait','press','imu','time-graph'].forEach(function(id){
                         var gd = document.getElementById(id);
                         if(gd && gd.data && gd.data.length && gd.data[0].x && gd.data[0].x.length){
                             var xData = gd.data[0].x;
@@ -712,18 +745,18 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                         }
                     });
                 }
-                return [null, null, null, null, null, null];
+                return [null, null, null, null, null, null, null];
             }
 
             var json_str = (typeof msg === 'string') ? msg : (msg && msg.data);
-            if(!json_str){ return [null, null, null, null, null, null]; }
+            if(!json_str){ return [null, null, null, null, null, null, null]; }
 
             var payload;
             try {
                 payload = JSON.parse(json_str);
             } catch(e){
                 console.error('failed to parse SSE payload', e);
-                return [null, null, null, null, null, null];
+                return [null, null, null, null, null, null, null];
             }
 
             var t = payload.t;
@@ -761,6 +794,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             var gait_payload = {x:[t], y:[gait]};
             var press_payload = {x:Array(8).fill(t), y:pressT};
             var imu_payload = {x:Array(3).fill(t), y:imuT};
+            var time_payload = {x:[t], y:[t]};
 
             var colorReady = '#FFD280';  // light orange
             var colorFault = '#FF9E9E';  // light red
@@ -797,7 +831,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             var xrange = [latestT - winSec, latestT];
 
             // Apply relayout on each graph individually (if already rendered)
-            ['torque', 'ankle', 'gait', 'press', 'imu'].forEach(function(id) {
+            ['torque', 'ankle', 'gait', 'press', 'imu', 'time-graph'].forEach(function(id) {
                 var gd = document.getElementById(id);
                 if(gd) {
                     try {
@@ -818,6 +852,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                 [gait_payload, [0], maxPoints],
                 [press_payload, [0,2,4,6,8,10,12,14], maxPoints],
                 [imu_payload, [0,2,4], maxPoints],
+                [time_payload, [0], maxPoints],
                 btn_style, debugTxt
             ];
         }
@@ -830,6 +865,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         Output("gait", "extendData"),
         Output("press", "extendData"),
         Output("imu", "extendData"),
+        Output("time-graph", "extendData"),
         Output("motor-btn", "style"),
         Output("debug-range", "children"),
         Input("es", "message"),

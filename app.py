@@ -257,7 +257,16 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
     # ``update_title`` is set to ``None`` so the browser tab always reads
     # "AFO Dashboard" instead of the default "Updating..." message while
     # callbacks are running.
-    app = dash.Dash(__name__, serve_locally=True, update_title=None)
+    # Include a meta tag so the site can be added to the iPad/iOS home screen
+    # without Safari chrome. This enables the "Add to Home Screen" feature to
+    # launch the dashboard as a standalone web app.
+    meta = [{"name": "apple-mobile-web-app-capable", "content": "yes"}]
+    app = dash.Dash(
+        __name__,
+        serve_locally=True,
+        update_title=None,
+        meta_tags=meta,
+    )
     app.title = "AFO Dashboard"
     if hasattr(app, "css") and hasattr(app.css, "config"):
         app.css.config.serve_locally = True

@@ -588,15 +588,22 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
     # zero button behaves like a momentary switch
     app.clientside_callback(
         """
-        function(n) {
-            var active = document.getElementById('zero-btn').matches(':active');
-            return [active ? 1 : 0, active ? 'on' : ''];
+        function(n, state){
+            if(typeof state !== 'number') state = 0;
+            var btn = document.getElementById('zero-btn');
+            var dbl = btn ? btn.dataset.doubleClick === '1' : false;
+            btn.dataset.doubleClick = '0';
+            if(n === undefined){ return [state, state ? 'on' : '']; }
+            if(state === 1){ return [0, '']; }
+            if(dbl){ return [1, 'on']; }
+            return [state, state ? 'on' : ''];
         }
         """,
         Output("zero-state", "data"),
         Output("zero-btn", "className"),
-        Input("zero-interval", "n_intervals"),
-        prevent_initial_call=False,
+        Input("zero-btn", "n_clicks"),
+        State("zero-state", "data"),
+        prevent_initial_call=True,
         )
 
 
@@ -605,11 +612,11 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         function(n, state){
             if(typeof state !== 'number') state = 0;
             var btn = document.getElementById('motor-btn');
-            var dur = btn ? parseFloat(btn.dataset.holdDuration || '0') : 0;
+            var dbl = btn ? btn.dataset.doubleClick === '1' : false;
+            btn.dataset.doubleClick = '0';
             if(n === undefined){ return [state, state ? 'on' : '']; }
-            btn.dataset.holdDuration = '0';
             if(state === 1){ return [0, '']; }
-            if(dur >= 2000){ return [1, 'on']; }
+            if(dbl){ return [1, 'on']; }
             return [state, state ? 'on' : ''];
         }
         """,
@@ -625,11 +632,11 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         function(n, state){
             if(typeof state !== 'number') state = 0;
             var btn = document.getElementById('assist-btn');
-            var dur = btn ? parseFloat(btn.dataset.holdDuration || '0') : 0;
+            var dbl = btn ? btn.dataset.doubleClick === '1' : false;
+            btn.dataset.doubleClick = '0';
             if(n === undefined){ return [state, state ? 'on' : '']; }
-            btn.dataset.holdDuration = '0';
             if(state === 1){ return [0, '']; }
-            if(dur >= 2000){ return [1, 'on']; }
+            if(dbl){ return [1, 'on']; }
             return [state, state ? 'on' : ''];
         }
         """,
@@ -645,11 +652,11 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         function(n, state){
             if(typeof state !== 'number') state = 0;
             var btn = document.getElementById('k-btn');
-            var dur = btn ? parseFloat(btn.dataset.holdDuration || '0') : 0;
+            var dbl = btn ? btn.dataset.doubleClick === '1' : false;
+            btn.dataset.doubleClick = '0';
             if(n === undefined){ return [state, state ? 'on' : '']; }
-            btn.dataset.holdDuration = '0';
             if(state === 1){ return [0, '']; }
-            if(dur >= 2000){ return [1, 'on']; }
+            if(dbl){ return [1, 'on']; }
             return [state, state ? 'on' : ''];
         }
         """,

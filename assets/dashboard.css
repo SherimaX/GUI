@@ -37,11 +37,6 @@ button {
     justify-content: space-evenly;
 }
 
-/* space between stacked button rows */
-.controls + .controls {
-    margin-top: 10px;
-}
-
 .controls button {
     flex: 1 1 0;
     min-width: 0;
@@ -146,8 +141,7 @@ button {
     display: flex;
     overflow-x: auto; /* allow horizontal scrolling for tab switch */
     overflow-y: hidden; /* disable vertical scrolling */
-    scroll-snap-type: x mandatory; /* snap between pages */
-    scroll-behavior: smooth;
+    scroll-snap-type: none;
     width: 90%;
     margin: 24px auto 24px auto;
     padding: 0;

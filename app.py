@@ -585,7 +585,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
     # Client-side callbacks for instantaneous button feedback
     # ------------------------------------------------------------------
 
-    # zero button behaves like a momentary switch
+    # all buttons toggle state only on a detected double-click
     app.clientside_callback(
         """
         function(n, state){
@@ -594,8 +594,10 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             var dbl = btn ? btn.dataset.doubleClick === '1' : false;
             btn.dataset.doubleClick = '0';
             if(n === undefined){ return [state, state ? 'on' : '']; }
-            if(state === 1){ return [0, '']; }
-            if(dbl){ return [1, 'on']; }
+            if(dbl){
+                var new_state = state === 1 ? 0 : 1;
+                return [new_state, new_state ? 'on' : ''];
+            }
             return [state, state ? 'on' : ''];
         }
         """,
@@ -615,8 +617,10 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             var dbl = btn ? btn.dataset.doubleClick === '1' : false;
             btn.dataset.doubleClick = '0';
             if(n === undefined){ return [state, state ? 'on' : '']; }
-            if(state === 1){ return [0, '']; }
-            if(dbl){ return [1, 'on']; }
+            if(dbl){
+                var new_state = state === 1 ? 0 : 1;
+                return [new_state, new_state ? 'on' : ''];
+            }
             return [state, state ? 'on' : ''];
         }
         """,
@@ -635,8 +639,10 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             var dbl = btn ? btn.dataset.doubleClick === '1' : false;
             btn.dataset.doubleClick = '0';
             if(n === undefined){ return [state, state ? 'on' : '']; }
-            if(state === 1){ return [0, '']; }
-            if(dbl){ return [1, 'on']; }
+            if(dbl){
+                var new_state = state === 1 ? 0 : 1;
+                return [new_state, new_state ? 'on' : ''];
+            }
             return [state, state ? 'on' : ''];
         }
         """,
@@ -655,8 +661,10 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             var dbl = btn ? btn.dataset.doubleClick === '1' : false;
             btn.dataset.doubleClick = '0';
             if(n === undefined){ return [state, state ? 'on' : '']; }
-            if(state === 1){ return [0, '']; }
-            if(dbl){ return [1, 'on']; }
+            if(dbl){
+                var new_state = state === 1 ? 0 : 1;
+                return [new_state, new_state ? 'on' : ''];
+            }
             return [state, state ? 'on' : ''];
         }
         """,

@@ -145,7 +145,7 @@ button {
     display: flex;
     overflow-x: auto; /* allow horizontal scrolling for tab switch */
     overflow-y: hidden; /* disable vertical scrolling */
-    scroll-snap-type: none;
+    scroll-snap-type: x mandatory;
     width: 90%;
     margin: 24px auto 24px auto;
     padding: 0;
@@ -158,6 +158,7 @@ button {
 .swipe-page {
     flex: 0 0 100%;
     scroll-snap-align: start;
+    scroll-snap-stop: always;
     padding: 2%;
     background: #ffffff;
     border-radius: 16px;

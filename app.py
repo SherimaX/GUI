@@ -921,11 +921,11 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
 if __name__ == "__main__":
     cfg = load_config()
 
-    # Spin up the UDP listener, falling back to a fake data generator if the
-    # Simulink host cannot be reached.
-    target_fn = start_udp_listener
-    if not is_host_reachable(cfg["udp"]["send_host"]):
-        target_fn = start_fake_data
+    # Determine whether the Simulink host is reachable. If not, fall back to
+    # the fake data generator and serve the dashboard on localhost so the user
+    # can run everything offline.
+    simulink_ok = is_host_reachable(cfg["udp"]["send_host"])
+    target_fn = start_udp_listener if simulink_ok else start_fake_data
 
     listener_t = threading.Thread(
         target=target_fn,
@@ -935,8 +935,9 @@ if __name__ == "__main__":
     listener_t.start()
 
     dash_app = build_dash_app(cfg)
+    host_addr = "192.168.7.15" if simulink_ok else "127.0.0.1"
     dash_app.run(
-        host="192.168.7.15",
+        host=host_addr,
         port=8050,
         debug=False,
         use_reloader=False,

@@ -68,6 +68,7 @@ MAX_CLIENTS = 5
 _active_clients = 0
 _client_lock = threading.Lock()
 
+
 # Helper to create a line trace with a separate legend marker
 def make_line_with_marker(name: str, color: str) -> list[go.Scattergl]:
     """Return a line trace and a marker-only trace for the legend."""
@@ -79,7 +80,7 @@ def make_line_with_marker(name: str, color: str) -> list[go.Scattergl]:
         line=dict(width=3, color=color),
         legendgroup=name,
         showlegend=False,
-        )
+    )
     marker = go.Scattergl(
         x=[None],
         y=[None],
@@ -88,8 +89,9 @@ def make_line_with_marker(name: str, color: str) -> list[go.Scattergl]:
         marker=dict(size=8, color=color, symbol="circle"),
         legendgroup=name,
         showlegend=True,
-        )
+    )
     return [line, marker]
+
 
 # --------------------------------------------------------------------------------------
 # Config & helpers
@@ -158,8 +160,7 @@ def start_udp_listener(cfg: Dict[str, Any]) -> None:
     sock.settimeout(1.0)  # add right after sock.setblocking(True)
     print(
         f"Listening for data on {cfg['udp']['listen_host']}:{cfg['udp']['listen_port']}"
-        )
-
+    )
 
     prev_t: float | None = None
     avg_dt: float = 0.0
@@ -180,7 +181,6 @@ def start_udp_listener(cfg: Dict[str, Any]) -> None:
         ankle = decoded.get("ankle_angle", 0.0)
         torque = decoded.get("actual_torque", 0.0)
         gait = decoded.get("gait_percentage", 0.0)
-
 
         # ------------------------------------------------------------------
         # Push latest sample to SSE queue (non-blocking)
@@ -212,7 +212,6 @@ def start_udp_listener(cfg: Dict[str, Any]) -> None:
                 event_q.put_nowait(sample)
             except Exception:
                 pass
-
 
 
 def start_fake_data(cfg: Dict[str, Any]) -> None:
@@ -282,7 +281,10 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
     # launch the dashboard as a standalone web app.
     meta = [
         {"name": "apple-mobile-web-app-capable", "content": "yes"},
-        {"name": "viewport", "content": "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"},
+        {
+            "name": "viewport",
+            "content": "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
+        },
     ]
     app = dash.Dash(
         __name__,
@@ -351,7 +353,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                                                 ),
                                             ),
                                         ),
-                                        config={"displayModeBar": False, "staticPlot": True},
+                                        config={"displayModeBar": False},
                                     ),
                                     dcc.Graph(
                                         id="ankle",
@@ -385,7 +387,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                                                 ),
                                             ),
                                         ),
-                                        config={"displayModeBar": False, "staticPlot": True},
+                                        config={"displayModeBar": False},
                                     ),
                                     dcc.Graph(
                                         id="gait",
@@ -419,7 +421,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                                                 ),
                                             ),
                                         ),
-                                        config={"displayModeBar": False, "staticPlot": True},
+                                        config={"displayModeBar": False},
                                     ),
                                 ],
                             )
@@ -440,7 +442,9 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                                                 for i in range(1, 9)
                                                 for tr in make_line_with_marker(
                                                     f"pressure_{i}",
-                                                    COLOR_CYCLE[(i - 1) % len(COLOR_CYCLE)],
+                                                    COLOR_CYCLE[
+                                                        (i - 1) % len(COLOR_CYCLE)
+                                                    ],
                                                 )
                                             ],
                                             layout=dict(
@@ -475,7 +479,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                                                 ),
                                             ),
                                         ),
-                                        config={"displayModeBar": False, "staticPlot": True},
+                                        config={"displayModeBar": False},
                                     ),
                                     dcc.Graph(
                                         id="imu",
@@ -486,7 +490,9 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                                                 for i in range(1, 4)
                                                 for tr in make_line_with_marker(
                                                     f"imu_{i}",
-                                                    COLOR_CYCLE[(i - 1) % len(COLOR_CYCLE)],
+                                                    COLOR_CYCLE[
+                                                        (i - 1) % len(COLOR_CYCLE)
+                                                    ],
                                                 )
                                             ],
                                             layout=dict(
@@ -521,7 +527,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                                                 ),
                                             ),
                                         ),
-                                        config={"displayModeBar": False, "staticPlot": True},
+                                        config={"displayModeBar": False},
                                     ),
                                     dcc.Graph(
                                         id="time-graph",
@@ -554,7 +560,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                                                 ),
                                             ),
                                         ),
-                                        config={"displayModeBar": False, "staticPlot": True},
+                                        config={"displayModeBar": False},
                                     ),
                                 ],
                             )
@@ -564,7 +570,13 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             ),
             html.Div(
                 id="tab-dots",
-                style={"display": "flex", "justifyContent": "center", "alignItems": "center", "marginTop": "0px", "marginBottom": "0px"},
+                style={
+                    "display": "flex",
+                    "justifyContent": "center",
+                    "alignItems": "center",
+                    "marginTop": "0px",
+                    "marginBottom": "0px",
+                },
                 children=[
                     html.Span(className="tab-dot", id="dot-0"),
                     html.Span(className="tab-dot", id="dot-1"),
@@ -589,7 +601,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                             html.Button("2s", id="window-2-btn", n_clicks=0),
                             html.Button("10s", id="window-10-btn", n_clicks=0),
                         ],
-                    )
+                    ),
                 ],
             ),
             html.Pre(
@@ -621,8 +633,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         Output("zero-btn", "className"),
         Input("zero-interval", "n_intervals"),
         prevent_initial_call=False,
-        )
-
+    )
 
     app.clientside_callback(
         """
@@ -638,7 +649,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         Input("motor-btn", "n_clicks"),
         State("motor-state", "data"),
         prevent_initial_call=True,
-        )
+    )
 
     app.clientside_callback(
         """
@@ -654,7 +665,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         Input("assist-btn", "n_clicks"),
         State("assist-state", "data"),
         prevent_initial_call=True,
-        )
+    )
 
     app.clientside_callback(
         """
@@ -670,7 +681,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         Input("k-btn", "n_clicks"),
         State("k-state", "data"),
         prevent_initial_call=True,
-        )
+    )
 
     # ------------------------------------------------------------------
     # Callback: send control packet when signal states change
@@ -682,13 +693,13 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         Input("assist-state", "data"),
         Input("k-state", "data"),
         prevent_initial_call=True,
-        )
+    )
     def update_signals(
         zero_state: int,
         motor_state: int,
         assist_state: int,
         k_state: int,
-        ) -> str:
+    ) -> str:
         send_control_packet(cfg, zero_state, motor_state, assist_state, k_state)
         return ""
 
@@ -698,7 +709,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         Input("window-10-btn", "n_clicks"),
         State("window-sec", "data"),
         prevent_initial_call=True,
-        )
+    )
     def update_window(n2, n10, current):
         ctx = dash.callback_context
         if not ctx.triggered:
@@ -727,7 +738,8 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
     # ------------------------------------------------------------------
     # Client-side callback: Update graphs for each SSE batch
     # ------------------------------------------------------------------
-    graph_update_js = string.Template(r"""
+    graph_update_js = string.Template(
+        r"""
         function(msg, window_sec){
             if(!msg){
                 // No new data – adjust x-range using existing points
@@ -861,7 +873,8 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                 btn_style, debugTxt
             ];
         }
-        """).substitute(sample_rate=SAMPLE_RATE_HZ, default_window=N_WINDOW_SEC)
+        """
+    ).substitute(sample_rate=SAMPLE_RATE_HZ, default_window=N_WINDOW_SEC)
 
     app.clientside_callback(
         graph_update_js,
@@ -876,7 +889,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         Input("es", "message"),
         Input("window-sec", "data"),
         prevent_initial_call=True,
-        )
+    )
 
     # ------------------------------------------------------------------
     # SSE endpoint: /events  (one single connection per browser client)
@@ -906,7 +919,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
 
     # Add a clientside callback to update the tab-index based on scroll position
     app.clientside_callback(
-        '''
+        """
         function(n_intervals) {
             var swipe = document.querySelector('.swipe-container');
             if (!swipe) return window.dash_clientside.no_update;
@@ -932,9 +945,9 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             }
             return window.dash_clientside.no_update;
         }
-        ''',
-        Output('tab-index', 'data'),
-        Input('zero-interval', 'n_intervals'),
+        """,
+        Output("tab-index", "data"),
+        Input("zero-interval", "n_intervals"),
         prevent_initial_call=False,
     )
 
@@ -958,7 +971,7 @@ if __name__ == "__main__":
         target=target_fn,
         args=(cfg,),
         daemon=True,
-        )
+    )
     listener_t.start()
 
     dash_app = build_dash_app(cfg)
@@ -973,4 +986,4 @@ if __name__ == "__main__":
         debug=False,
         use_reloader=False,
         threaded=True,
-        )
+    )

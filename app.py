@@ -836,9 +836,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
 
             var winSec = (typeof window_sec === 'number') ? window_sec : ${default_window};
             var dt = (typeof avg_dt === 'number') ? avg_dt : 1.0/${sample_rate};
-            // Always keep at least the default window of data so switching
-            // from a shorter to a longer window still shows recent history.
-            var maxPoints = Math.round(${default_window} / dt);
+            var maxPoints = Math.round(winSec / dt);
 
             // Slide x-axis window to show only the last window_sec seconds
             var latestT = t[t.length - 1];

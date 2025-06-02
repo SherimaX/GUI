@@ -16,6 +16,12 @@ function setupDoubleClickButton(id){
     });
 }
 
-document.addEventListener('DOMContentLoaded', function(){
+function initDoubleClickButtons(){
     ['zero-btn','motor-btn','assist-btn','k-btn'].forEach(setupDoubleClickButton);
-});
+}
+
+if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', initDoubleClickButtons);
+} else {
+    initDoubleClickButtons();
+}

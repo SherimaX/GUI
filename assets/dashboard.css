@@ -55,6 +55,15 @@ button {
     margin: 0 4px;
 }
 
+@keyframes hold-progress {
+    from { background: #ffffff; color: #000000; }
+    to { background: #000000; color: #ffffff; }
+}
+
+.controls button.holding:not(.on) {
+    animation: hold-progress 2s linear forwards;
+}
+
 .controls button:hover {
     background: #f0f0f0;
 }

@@ -604,9 +604,13 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         """
         function(n, state){
             if(typeof state !== 'number') state = 0;
+            var btn = document.getElementById('motor-btn');
+            var dur = btn ? parseFloat(btn.dataset.holdDuration || '0') : 0;
             if(n === undefined){ return [state, state ? 'on' : '']; }
-            var newState = 1 - state;
-            return [newState, newState ? 'on' : ''];
+            btn.dataset.holdDuration = '0';
+            if(state === 1){ return [0, '']; }
+            if(dur >= 2000){ return [1, 'on']; }
+            return [state, state ? 'on' : ''];
         }
         """,
         Output("motor-state", "data"),
@@ -620,9 +624,13 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         """
         function(n, state){
             if(typeof state !== 'number') state = 0;
+            var btn = document.getElementById('assist-btn');
+            var dur = btn ? parseFloat(btn.dataset.holdDuration || '0') : 0;
             if(n === undefined){ return [state, state ? 'on' : '']; }
-            var newState = 1 - state;
-            return [newState, newState ? 'on' : ''];
+            btn.dataset.holdDuration = '0';
+            if(state === 1){ return [0, '']; }
+            if(dur >= 2000){ return [1, 'on']; }
+            return [state, state ? 'on' : ''];
         }
         """,
         Output("assist-state", "data"),
@@ -636,9 +644,13 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         """
         function(n, state){
             if(typeof state !== 'number') state = 0;
+            var btn = document.getElementById('k-btn');
+            var dur = btn ? parseFloat(btn.dataset.holdDuration || '0') : 0;
             if(n === undefined){ return [state, state ? 'on' : '']; }
-            var newState = 1 - state;
-            return [newState, newState ? 'on' : ''];
+            btn.dataset.holdDuration = '0';
+            if(state === 1){ return [0, '']; }
+            if(dur >= 2000){ return [1, 'on']; }
+            return [state, state ? 'on' : ''];
         }
         """,
         Output("k-state", "data"),

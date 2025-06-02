@@ -53,8 +53,12 @@ def build_payload(args) -> bytes:
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Send a test control packet to Simulink.")
     p.add_argument("--zero", type=float, default=0.0, help="zero_signal value (float)")
-    p.add_argument("--motor", type=float, default=1.0, help="motor_signal value (float)")
-    p.add_argument("--assist", type=float, default=0.5, help="assistance_signal value (float)")
+    p.add_argument(
+        "--motor", type=float, default=1.0, help="motor_signal value (float)"
+    )
+    p.add_argument(
+        "--assist", type=float, default=0.5, help="assistance_signal value (float)"
+    )
     p.add_argument("--k", type=float, default=0.2, help="fixed_k_signal value (float)")
     return p.parse_args()
 
@@ -71,4 +75,4 @@ async def main_async() -> None:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-    asyncio.run(main_async()) 
+    asyncio.run(main_async())

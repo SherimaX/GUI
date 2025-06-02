@@ -311,6 +311,18 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             html.Div(EventSource(id="es", url="/events"), style={"display": "none"}),
             dcc.Store(id="tab-index", data=0),
             html.Div(
+                className="controls-dock",
+                children=[
+                    html.Div(
+                        className="controls",
+                        children=[
+                            html.Button("2s", id="window-2-btn", n_clicks=0),
+                            html.Button("10s", id="window-10-btn", n_clicks=0),
+                        ],
+                    )
+                ],
+            ),
+            html.Div(
                 className="swipe-container",
                 children=[
                     html.Div(
@@ -550,13 +562,6 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                             html.Button("k", id="k-btn", n_clicks=0),
                         ],
                     ),
-                    html.Div(
-                        className="controls",
-                        children=[
-                            html.Button("2s", id="window-2-btn", n_clicks=0),
-                            html.Button("10s", id="window-10-btn", n_clicks=0),
-                        ],
-                    )
                 ],
             ),
         ],

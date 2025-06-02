@@ -8,7 +8,7 @@ Features implemented:
 4. Live chart of actual torque and the first 3 IMU channels.
 
 Run:
-    python app.py  # then open http://127.0.0.1:8050 in a browser
+    python app.py  # then open http://192.168.7.15:8050 in a browser
 
 Make sure Simulink is broadcasting the 112-byte data packets defined in
 `config.yaml`. The app listens on the configured port and updates at
@@ -921,20 +921,11 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
 if __name__ == "__main__":
     cfg = load_config()
 
-    # Spin up the UDP listener. If the configured Simulink host is not
-    # reachable we fall back to localhost (127.0.0.1). This allows running a
-    # local Simulink instance without editing ``config.yaml``. Only if
-    # localhost is also unreachable do we resort to the fake data generator.
+    # Spin up the UDP listener, falling back to a fake data generator if the
+    # Simulink host cannot be reached.
     target_fn = start_udp_listener
     if not is_host_reachable(cfg["udp"]["send_host"]):
-        print(
-            f"Simulink host {cfg['udp']['send_host']} unreachable – "
-            "trying 127.0.0.1"
-        )
-        cfg["udp"]["send_host"] = "127.0.0.1"
-        if not is_host_reachable(cfg["udp"]["send_host"]):
-            print("Localhost also unreachable – using fake data generator")
-            target_fn = start_fake_data
+        target_fn = start_fake_data
 
     listener_t = threading.Thread(
         target=target_fn,
@@ -945,7 +936,7 @@ if __name__ == "__main__":
 
     dash_app = build_dash_app(cfg)
     dash_app.run(
-        host="127.0.0.1",
+        host="192.168.7.15",
         port=8050,
         debug=False,
         use_reloader=False,

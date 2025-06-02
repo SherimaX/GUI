@@ -53,5 +53,5 @@ signals:
   actual_torque: 25
   heel_strike: 26
   assistance_level: 27
-  command_torque: 28
+  demand_torque: 28
   statusword: 29

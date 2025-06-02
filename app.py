@@ -179,7 +179,7 @@ def start_udp_listener(cfg: Dict[str, Any]) -> None:
         sim_t = decoded.get("time", decoded.get("Time", 0.0))
         ankle = decoded.get("ankle_angle", 0.0)
         torque = decoded.get("actual_torque", 0.0)
-        command = decoded.get("command_torque", 0.0)
+        demand = decoded.get("demand_torque", 0.0)
         gait = decoded.get("gait_percentage", 0.0)
 
 
@@ -196,7 +196,7 @@ def start_udp_listener(cfg: Dict[str, Any]) -> None:
             "t": sim_t,
             "ankle": ankle,
             "torque": torque,
-            "command_torque": command,
+            "demand_torque": demand,
             "gait": gait,
             "press": [decoded.get(f"pressure_{i}", 0.0) for i in range(1, 9)],
             "imu": [decoded.get(f"imu_{i}", 0.0) for i in range(1, 13)],
@@ -229,7 +229,7 @@ def start_fake_data(cfg: Dict[str, Any]) -> None:
     while True:
         ankle = 20.0 * math.sin(t)
         torque = 5.0 * math.sin(t / 2.0)
-        command = 4.0 * math.sin(t / 2.0 + 0.5)
+        demand = 4.0 * math.sin(t / 2.0 + 0.5)
         pressures = [500.0 + 100.0 * math.sin(t + i) for i in range(8)]
         imus = [math.sin(t + i * 0.1) for i in range(12)]
         gait = (t % 1.0) * 100.0
@@ -244,7 +244,7 @@ def start_fake_data(cfg: Dict[str, Any]) -> None:
             "t": t,
             "ankle": ankle,
             "torque": torque,
-            "command_torque": command,
+            "demand_torque": demand,
             "gait": gait,
             "press": pressures,
             "imu": imus,
@@ -340,8 +340,8 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                                         style={"height": "360px"},
                                         figure=go.Figure(
                                             data=(
-                                                make_line_with_marker("actual_torque", "#0B74FF")
-                                                + make_line_with_marker("command_torque", "#FF7F0E")
+                                                make_line_with_marker("actual torque", "#0B74FF")
+                                                + make_line_with_marker("demand torque", "#FF7F0E")
                                             ),
                                             layout=dict(
                                                 yaxis=dict(
@@ -360,6 +360,14 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                                                 ),
                                                 title=None,
                                                 showlegend=True,
+                                                legend=dict(
+                                                    orientation="h",
+                                                    yanchor="bottom",
+                                                    y=1.02,
+                                                    xanchor="left",
+                                                    x=0,
+                                                ),
+                                                margin=dict(t=60),
                                                 plot_bgcolor="rgba(0,0,0,0)",
                                                 paper_bgcolor="rgba(0,0,0,0)",
                                                 font=dict(
@@ -721,7 +729,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             var t = payload.t;
             var ankle = payload.ankle;
             var torque = payload.torque;
-            var command = payload.command_torque;
+            var demand = payload.demand_torque;
             var gait = payload.gait;
             var press = payload.press;
             var imu = payload.imu;
@@ -731,7 +739,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             if(!Array.isArray(t)) t = [t];
             if(!Array.isArray(ankle)) ankle = [ankle];
             if(!Array.isArray(torque)) torque = [torque];
-            if(!Array.isArray(command)) command = [command];
+            if(!Array.isArray(demand)) demand = [demand];
             if(!Array.isArray(gait)) gait = [gait];
             if(press && typeof press[0] === 'number') press = [press];
             if(imu && typeof imu[0] === 'number') imu = [imu];
@@ -750,7 +758,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                 }
             }
 
-            var torque_payload = {x:[t, t], y:[torque, command]};
+            var torque_payload = {x:[t, t], y:[torque, demand]};
             var ankle_payload = {x:[t], y:[ankle]};
             var gait_payload = {x:[t], y:[gait]};
             var press_payload = {x:Array(8).fill(t), y:pressT};

@@ -596,8 +596,10 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             if(n === undefined){ return [state, state ? 'on' : '']; }
             if(dbl){
                 var new_state = state === 1 ? 0 : 1;
+                console.log('zero state', new_state);
                 return [new_state, new_state ? 'on' : ''];
             }
+            console.log('zero state', state);
             return [state, state ? 'on' : ''];
         }
         """,
@@ -619,8 +621,10 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             if(n === undefined){ return [state, state ? 'on' : '']; }
             if(dbl){
                 var new_state = state === 1 ? 0 : 1;
+                console.log('motor state', new_state);
                 return [new_state, new_state ? 'on' : ''];
             }
+            console.log('motor state', state);
             return [state, state ? 'on' : ''];
         }
         """,
@@ -641,8 +645,10 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             if(n === undefined){ return [state, state ? 'on' : '']; }
             if(dbl){
                 var new_state = state === 1 ? 0 : 1;
+                console.log('assist state', new_state);
                 return [new_state, new_state ? 'on' : ''];
             }
+            console.log('assist state', state);
             return [state, state ? 'on' : ''];
         }
         """,
@@ -663,8 +669,10 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             if(n === undefined){ return [state, state ? 'on' : '']; }
             if(dbl){
                 var new_state = state === 1 ? 0 : 1;
+                console.log('k state', new_state);
                 return [new_state, new_state ? 'on' : ''];
             }
+            console.log('k state', state);
             return [state, state ? 'on' : ''];
         }
         """,
@@ -692,6 +700,11 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         assist_state: int,
         k_state: int,
         ) -> str:
+        print(
+            f"[DEBUG] zero={zero_state} motor={motor_state} "
+            f"assist={assist_state} k={k_state}",
+            flush=True,
+        )
         send_control_packet(cfg, zero_state, motor_state, assist_state, k_state)
         return ""
 

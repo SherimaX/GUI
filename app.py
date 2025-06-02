@@ -585,29 +585,18 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
     # Client-side callbacks for instantaneous button feedback
     # ------------------------------------------------------------------
 
-    # all buttons toggle state only on a detected double-click
+    # zero button behaves like a momentary switch
     app.clientside_callback(
         """
-        function(n, state){
-            if(typeof state !== 'number') state = 0;
-            var btn = document.getElementById('zero-btn');
-            var dbl = btn ? btn.dataset.doubleClick === '1' : false;
-            btn.dataset.doubleClick = '0';
-            if(n === undefined){ return [state, state ? 'on' : '']; }
-            if(dbl){
-                var new_state = state === 1 ? 0 : 1;
-                console.log('zero state', new_state);
-                return [new_state, new_state ? 'on' : ''];
-            }
-            console.log('zero state', state);
-            return [state, state ? 'on' : ''];
+        function(n) {
+            var active = document.getElementById('zero-btn').matches(':active');
+            return [active ? 1 : 0, active ? 'on' : ''];
         }
         """,
         Output("zero-state", "data"),
         Output("zero-btn", "className"),
-        Input("zero-btn", "n_clicks"),
-        State("zero-state", "data"),
-        prevent_initial_call=True,
+        Input("zero-interval", "n_intervals"),
+        prevent_initial_call=False,
         )
 
 
@@ -615,17 +604,9 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         """
         function(n, state){
             if(typeof state !== 'number') state = 0;
-            var btn = document.getElementById('motor-btn');
-            var dbl = btn ? btn.dataset.doubleClick === '1' : false;
-            btn.dataset.doubleClick = '0';
             if(n === undefined){ return [state, state ? 'on' : '']; }
-            if(dbl){
-                var new_state = state === 1 ? 0 : 1;
-                console.log('motor state', new_state);
-                return [new_state, new_state ? 'on' : ''];
-            }
-            console.log('motor state', state);
-            return [state, state ? 'on' : ''];
+            var newState = 1 - state;
+            return [newState, newState ? 'on' : ''];
         }
         """,
         Output("motor-state", "data"),
@@ -639,17 +620,9 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         """
         function(n, state){
             if(typeof state !== 'number') state = 0;
-            var btn = document.getElementById('assist-btn');
-            var dbl = btn ? btn.dataset.doubleClick === '1' : false;
-            btn.dataset.doubleClick = '0';
             if(n === undefined){ return [state, state ? 'on' : '']; }
-            if(dbl){
-                var new_state = state === 1 ? 0 : 1;
-                console.log('assist state', new_state);
-                return [new_state, new_state ? 'on' : ''];
-            }
-            console.log('assist state', state);
-            return [state, state ? 'on' : ''];
+            var newState = 1 - state;
+            return [newState, newState ? 'on' : ''];
         }
         """,
         Output("assist-state", "data"),
@@ -663,17 +636,9 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         """
         function(n, state){
             if(typeof state !== 'number') state = 0;
-            var btn = document.getElementById('k-btn');
-            var dbl = btn ? btn.dataset.doubleClick === '1' : false;
-            btn.dataset.doubleClick = '0';
             if(n === undefined){ return [state, state ? 'on' : '']; }
-            if(dbl){
-                var new_state = state === 1 ? 0 : 1;
-                console.log('k state', new_state);
-                return [new_state, new_state ? 'on' : ''];
-            }
-            console.log('k state', state);
-            return [state, state ? 'on' : ''];
+            var newState = 1 - state;
+            return [newState, newState ? 'on' : ''];
         }
         """,
         Output("k-state", "data"),
@@ -700,11 +665,6 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         assist_state: int,
         k_state: int,
         ) -> str:
-        print(
-            f"[DEBUG] zero={zero_state} motor={motor_state} "
-            f"assist={assist_state} k={k_state}",
-            flush=True,
-        )
         send_control_packet(cfg, zero_state, motor_state, assist_state, k_state)
         return ""
 

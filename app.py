@@ -665,6 +665,14 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         assist_state: int,
         k_state: int,
         ) -> str:
+        # Print the current state of the control buttons for debugging. This
+        # helps verify that the dashboard is sending the expected values over
+        # UDP whenever a button is toggled.
+        print(
+            "Control states -- zero: {0}, motor: {1}, assist: {2}, k: {3}".format(
+                zero_state, motor_state, assist_state, k_state
+            )
+        )
         send_control_packet(cfg, zero_state, motor_state, assist_state, k_state)
         return ""
 

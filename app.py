@@ -179,6 +179,7 @@ def start_udp_listener(cfg: Dict[str, Any]) -> None:
         sim_t = decoded.get("time", decoded.get("Time", 0.0))
         ankle = decoded.get("ankle_angle", 0.0)
         torque = decoded.get("actual_torque", 0.0)
+        command = decoded.get("command_torque", 0.0)
         gait = decoded.get("gait_percentage", 0.0)
 
 
@@ -195,6 +196,7 @@ def start_udp_listener(cfg: Dict[str, Any]) -> None:
             "t": sim_t,
             "ankle": ankle,
             "torque": torque,
+            "command_torque": command,
             "gait": gait,
             "press": [decoded.get(f"pressure_{i}", 0.0) for i in range(1, 9)],
             "imu": [decoded.get(f"imu_{i}", 0.0) for i in range(1, 13)],
@@ -227,6 +229,7 @@ def start_fake_data(cfg: Dict[str, Any]) -> None:
     while True:
         ankle = 20.0 * math.sin(t)
         torque = 5.0 * math.sin(t / 2.0)
+        command = 4.0 * math.sin(t / 2.0 + 0.5)
         pressures = [500.0 + 100.0 * math.sin(t + i) for i in range(8)]
         imus = [math.sin(t + i * 0.1) for i in range(12)]
         gait = (t % 1.0) * 100.0
@@ -241,6 +244,7 @@ def start_fake_data(cfg: Dict[str, Any]) -> None:
             "t": t,
             "ankle": ankle,
             "torque": torque,
+            "command_torque": command,
             "gait": gait,
             "press": pressures,
             "imu": imus,
@@ -335,13 +339,14 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                                         id="torque",
                                         style={"height": "360px"},
                                         figure=go.Figure(
-                                            data=make_line_with_marker(
-                                                "actual_torque", "#0B74FF"
+                                            data=(
+                                                make_line_with_marker("actual_torque", "#0B74FF")
+                                                + make_line_with_marker("command_torque", "#FF7F0E")
                                             ),
                                             layout=dict(
                                                 yaxis=dict(
                                                     range=[-5, 15],
-                                                    title="Actual Torque",
+                                                    title="Torque (Nm)",
                                                     gridcolor="#EEF1F4",
                                                     gridwidth=2,
                                                     zeroline=True,
@@ -354,7 +359,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                                                     tickfont=dict(size=16),
                                                 ),
                                                 title=None,
-                                                showlegend=False,
+                                                showlegend=True,
                                                 plot_bgcolor="rgba(0,0,0,0)",
                                                 paper_bgcolor="rgba(0,0,0,0)",
                                                 font=dict(
@@ -716,6 +721,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             var t = payload.t;
             var ankle = payload.ankle;
             var torque = payload.torque;
+            var command = payload.command_torque;
             var gait = payload.gait;
             var press = payload.press;
             var imu = payload.imu;
@@ -725,6 +731,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             if(!Array.isArray(t)) t = [t];
             if(!Array.isArray(ankle)) ankle = [ankle];
             if(!Array.isArray(torque)) torque = [torque];
+            if(!Array.isArray(command)) command = [command];
             if(!Array.isArray(gait)) gait = [gait];
             if(press && typeof press[0] === 'number') press = [press];
             if(imu && typeof imu[0] === 'number') imu = [imu];
@@ -743,7 +750,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                 }
             }
 
-            var torque_payload = {x:[t], y:[torque]};
+            var torque_payload = {x:[t, t], y:[torque, command]};
             var ankle_payload = {x:[t], y:[ankle]};
             var gait_payload = {x:[t], y:[gait]};
             var press_payload = {x:Array(8).fill(t), y:pressT};
@@ -797,7 +804,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                 }
             });
             return [
-                [torque_payload, [0], maxPoints],
+                [torque_payload, [0,2], maxPoints],
                 [ankle_payload, [0], maxPoints],
                 [gait_payload, [0], maxPoints],
                 [press_payload, [0,2,4,6,8,10,12,14], maxPoints],

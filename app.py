@@ -8,7 +8,7 @@ Features implemented:
 4. Live chart of actual torque and the first 3 IMU channels.
 
 Run:
-    python app.py  # then open http://192.168.7.15:8050 in a browser
+    python app.py  # then open http://127.0.0.1:8050 in a browser
 
 Make sure Simulink is broadcasting the 112-byte data packets defined in
 `config.yaml`. The app listens on the configured port and updates at
@@ -945,7 +945,7 @@ if __name__ == "__main__":
 
     dash_app = build_dash_app(cfg)
     dash_app.run(
-        host="192.168.7.15",
+        host="127.0.0.1",
         port=8050,
         debug=False,
         use_reloader=False,

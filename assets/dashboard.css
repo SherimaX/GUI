@@ -37,6 +37,10 @@ button {
     justify-content: space-evenly;
 }
 
+.controls + .controls {
+    margin-top: 12px;
+}
+
 .controls button {
     flex: 1 1 0;
     min-width: 0;

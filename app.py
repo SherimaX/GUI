@@ -592,16 +592,6 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                     )
                 ],
             ),
-            html.Pre(
-                id="debug-msg",
-                children="Waiting for data...",
-                style={"whiteSpace": "pre-wrap", "color": "#aa0000"},
-            ),
-            html.Pre(
-                id="debug-range",
-                children="",
-                style={"whiteSpace": "pre-wrap", "color": "#0000aa"},
-            ),
         ],
     )
 
@@ -715,20 +705,6 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
             # the plot displays about 10&nbsp;s on screen.
             return 2
         return current
-
-    @app.callback(
-        Output("debug-msg", "children"),
-        Input("es", "message"),
-        prevent_initial_call=False,
-    )
-    def update_debug(msg):
-        if not msg:
-            return dash.no_update
-        if isinstance(msg, dict):
-            data = msg.get("data", msg)
-        else:
-            data = getattr(msg, "data", msg)
-        return str(data)
 
     # ------------------------------------------------------------------
     # Client-side callback: Update graphs for each SSE batch
@@ -849,12 +825,6 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                     } catch(e) { /* ignore before initial render */ }
                 }
             });
-            var debugTxt = "winSec=" + winSec +
-                " xrange=[" + xrange[0].toFixed(2) + ", " + xrange[1].toFixed(2) + "]" +
-                " maxPts=" + maxPoints + " dt=" + dt.toFixed(5);
-            if(typeof avg_dt === 'number'){
-                debugTxt += " avgDt=" + avg_dt.toFixed(5);
-            }
             return [
                 [torque_payload, [0], maxPoints],
                 [ankle_payload, [0], maxPoints],
@@ -862,7 +832,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
                 [press_payload, [0,2,4,6,8,10,12,14], maxPoints],
                 [imu_payload, [0,2,4], maxPoints],
                 [time_payload, [0], maxPoints],
-                btn_style, debugTxt
+                btn_style
             ];
         }
         """).substitute(sample_rate=SAMPLE_RATE_HZ, default_window=N_WINDOW_SEC)
@@ -876,7 +846,6 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         Output("imu", "extendData"),
         Output("time-graph", "extendData"),
         Output("motor-btn", "style"),
-        Output("debug-range", "children"),
         Input("es", "message"),
         Input("window-sec", "data"),
         prevent_initial_call=True,

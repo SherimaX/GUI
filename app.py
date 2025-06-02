@@ -71,24 +71,25 @@ _client_lock = threading.Lock()
 # Helper to create a line trace with a separate legend marker
 def make_line_with_marker(name: str, color: str) -> list[go.Scattergl]:
     """Return a line trace and a marker-only trace for the legend."""
+    clean_name = name.replace("_", " ")
     line = go.Scattergl(
         x=[],
         y=[],
         mode="lines",
-        name=name,
+        name=clean_name,
         line=dict(width=3, color=color),
-        legendgroup=name,
+        legendgroup=clean_name,
         showlegend=False,
-        )
+    )
     marker = go.Scattergl(
         x=[None],
         y=[None],
         mode="markers",
-        name=name,
+        name=clean_name,
         marker=dict(size=8, color=color, symbol="circle"),
-        legendgroup=name,
+        legendgroup=clean_name,
         showlegend=True,
-        )
+    )
     return [line, marker]
 
 # --------------------------------------------------------------------------------------

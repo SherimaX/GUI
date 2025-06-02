@@ -921,11 +921,20 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
 if __name__ == "__main__":
     cfg = load_config()
 
-    # Spin up the UDP listener, falling back to a fake data generator if the
-    # Simulink host cannot be reached.
+    # Spin up the UDP listener. If the configured Simulink host is not
+    # reachable we fall back to localhost (127.0.0.1). This allows running a
+    # local Simulink instance without editing ``config.yaml``. Only if
+    # localhost is also unreachable do we resort to the fake data generator.
     target_fn = start_udp_listener
     if not is_host_reachable(cfg["udp"]["send_host"]):
-        target_fn = start_fake_data
+        print(
+            f"Simulink host {cfg['udp']['send_host']} unreachable – "
+            "trying 127.0.0.1"
+        )
+        cfg["udp"]["send_host"] = "127.0.0.1"
+        if not is_host_reachable(cfg["udp"]["send_host"]):
+            print("Localhost also unreachable – using fake data generator")
+            target_fn = start_fake_data
 
     listener_t = threading.Thread(
         target=target_fn,

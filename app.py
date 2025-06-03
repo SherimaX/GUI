@@ -131,36 +131,28 @@ def send_control_packet(
 ) -> None:
     """Send a 4-float packet containing the four control signals."""
     payload = struct.pack(CONTROL_FMT, zero, motor, assist, k_val)
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-        sock.sendto(payload, (cfg["udp"]["send_host"], cfg["udp"]["send_port"]))
+    host = cfg["udp"]["send_host"]
+    port = cfg["udp"]["send_port"]
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        try:
+            sock.connect((host, port))
+            sock.sendall(payload)
+        except Exception:
+            pass
 
 
-# --------------------------------------------------------------------------------------
-# Background UDP listener (pushes decoded packets to the SSE queue)
-# --------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+# Background TCP client (pushes decoded packets to the SSE queue)
+# ------------------------------------------------------------------------------
 
-
-def start_udp_listener(cfg: Dict[str, Any]) -> None:
+def start_tcp_client(cfg: Dict[str, Any]) -> None:
     fmt = cfg["packet"]["format"]
     expected = struct.calcsize(fmt)
     mapping = cfg["signals"]
+    host = cfg["udp"]["send_host"]
+    port = cfg["udp"]["send_port"]
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    # Allow quick rebinding if the address was in use (e.g., after a crash)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    # Some systems (not all Windows versions) support SO_REUSEPORT as well
-    if hasattr(socket, "SO_REUSEPORT"):
-        try:
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-        except OSError:
-            pass  # ignore if not supported
-    sock.bind((cfg["udp"]["listen_host"], cfg["udp"]["listen_port"]))
-    sock.setblocking(True)
-    sock.settimeout(1.0)  # add right after sock.setblocking(True)
-    print(
-        f"Listening for data on {cfg['udp']['listen_host']}:{cfg['udp']['listen_port']}"
-        )
-
+    print(f"Connecting to TCP server {host}:{port}")
 
     prev_t: float | None = None
     avg_dt: float = 0.0
@@ -168,55 +160,60 @@ def start_udp_listener(cfg: Dict[str, Any]) -> None:
 
     while True:
         try:
-            data, _ = sock.recvfrom(expected)
-        except socket.timeout:
-            continue
+            with socket.create_connection((host, port)) as sock:
+                sock.settimeout(1.0)
+                buffer = b""
+                while True:
+                    try:
+                        chunk = sock.recv(expected - len(buffer))
+                        if not chunk:
+                            raise ConnectionResetError
+                        buffer += chunk
+                        if len(buffer) < expected:
+                            continue
+                        data = buffer[:expected]
+                        buffer = buffer[expected:]
+                    except socket.timeout:
+                        continue
 
-        if len(data) != expected:
-            continue  # ignore malformed packet
-        decoded = decode_packet(data, fmt, mapping)
-        decoded["timestamp"] = time.time()
-        # Extract fields for logging and plotting
-        sim_t = decoded.get("time", decoded.get("Time", 0.0))
-        ankle = decoded.get("ankle_angle", 0.0)
-        torque = decoded.get("actual_torque", 0.0)
-        demand = decoded.get("demand_torque", 0.0)
-        gait = decoded.get("gait_percentage", 0.0)
+                    decoded = decode_packet(data, fmt, mapping)
+                    decoded["timestamp"] = time.time()
+                    sim_t = decoded.get("time", decoded.get("Time", 0.0))
+                    ankle = decoded.get("ankle_angle", 0.0)
+                    torque = decoded.get("actual_torque", 0.0)
+                    demand = decoded.get("demand_torque", 0.0)
+                    gait = decoded.get("gait_percentage", 0.0)
 
+                    if prev_t is not None:
+                        dt = sim_t - prev_t
+                        avg_dt = (avg_dt * count + dt) / (count + 1)
+                        count += 1
+                    prev_t = sim_t
 
-        # ------------------------------------------------------------------
-        # Push latest sample to SSE queue (non-blocking)
-        # ------------------------------------------------------------------
-        if prev_t is not None:
-            dt = sim_t - prev_t
-            avg_dt = (avg_dt * count + dt) / (count + 1)
-            count += 1
-        prev_t = sim_t
-
-        sample = {
-            "t": sim_t,
-            "ankle": ankle,
-            "torque": torque,
-            "demand_torque": demand,
-            "gait": gait,
-            "press": [decoded.get(f"pressure_{i}", 0.0) for i in range(1, 9)],
-            "imu": [decoded.get(f"imu_{i}", 0.0) for i in range(1, 13)],
-            "statusword": decoded.get("statusword", 0.0),
-            "avg_dt": avg_dt,
-        }
-        try:
-            event_q.put_nowait(sample)
-        except Full:
-            try:
-                event_q.get_nowait()
-            except Exception:
-                pass
-            try:
-                event_q.put_nowait(sample)
-            except Exception:
-                pass
-
-
+                    sample = {
+                        "t": sim_t,
+                        "ankle": ankle,
+                        "torque": torque,
+                        "demand_torque": demand,
+                        "gait": gait,
+                        "press": [decoded.get(f"pressure_{i}", 0.0) for i in range(1, 9)],
+                        "imu": [decoded.get(f"imu_{i}", 0.0) for i in range(1, 13)],
+                        "statusword": decoded.get("statusword", 0.0),
+                        "avg_dt": avg_dt,
+                    }
+                    try:
+                        event_q.put_nowait(sample)
+                    except Full:
+                        try:
+                            event_q.get_nowait()
+                        except Exception:
+                            pass
+                        try:
+                            event_q.put_nowait(sample)
+                        except Exception:
+                            pass
+        except Exception:
+            time.sleep(1.0)
 
 def start_fake_data(cfg: Dict[str, Any]) -> None:
     """Generate synthetic samples when the Simulink host is unreachable."""
@@ -918,7 +915,7 @@ if __name__ == "__main__":
     # the fake data generator and serve the dashboard on localhost so the user
     # can run everything offline.
     simulink_ok = is_host_reachable(cfg["udp"]["send_host"])
-    target_fn = start_udp_listener if simulink_ok else start_fake_data
+    target_fn = start_tcp_client if simulink_ok else start_fake_data
 
     listener_t = threading.Thread(
         target=target_fn,

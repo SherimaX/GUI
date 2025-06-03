@@ -2,6 +2,7 @@ import struct
 import socket
 import time
 import math
+import threading
 from typing import Dict, Any
 from queue import Full
 
@@ -12,6 +13,14 @@ from utils import decode_packet
 # minimum interval between control packets in seconds
 _MIN_CTRL_INTERVAL = UPDATE_MS / 1000.0
 _last_ctrl_ts = 0.0
+
+# global stop event for graceful shutdown
+_stop_event = threading.Event()
+
+
+def request_shutdown() -> None:
+    """Signal the network loops to exit cleanly."""
+    _stop_event.set()
 
 
 def send_control_packet(
@@ -41,8 +50,10 @@ def send_control_packet(
             pass
 
 
-def start_tcp_client(cfg: Dict[str, Any]) -> None:
+def start_tcp_client(cfg: Dict[str, Any], stop_event: threading.Event | None = None) -> None:
     """Listen to the TCP stream and push decoded packets to ``event_q``."""
+    if stop_event is None:
+        stop_event = _stop_event
     fmt = cfg["packet"]["format"]
     expected = struct.calcsize(fmt)
     mapping = cfg["signals"]
@@ -55,13 +66,13 @@ def start_tcp_client(cfg: Dict[str, Any]) -> None:
     avg_dt: float = 0.0
     count: int = 0
 
-    while True:
+    while not stop_event.is_set():
         try:
             with socket.create_connection((host, port)) as sock:
                 sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
                 sock.settimeout(1.0)
                 buffer = b""
-                while True:
+                while not stop_event.is_set():
                     try:
                         chunk = sock.recv(expected - len(buffer))
                         if not chunk:
@@ -111,18 +122,21 @@ def start_tcp_client(cfg: Dict[str, Any]) -> None:
                         except Exception:
                             pass
         except Exception:
-            time.sleep(1.0)
+            if not stop_event.is_set():
+                time.sleep(1.0)
 
 
-def start_fake_data(cfg: Dict[str, Any]) -> None:
+def start_fake_data(cfg: Dict[str, Any], stop_event: threading.Event | None = None) -> None:
     """Generate synthetic samples when the Simulink host is unreachable."""
+    if stop_event is None:
+        stop_event = _stop_event
     print("Simulink host unreachable – using fake data generator")
     t = 0.0
     prev_t: float | None = None
     avg_dt: float = 0.0
     count: int = 0
     dt = 1.0 / SAMPLE_RATE_HZ
-    while True:
+    while not stop_event.is_set():
         ankle = 20.0 * math.sin(t)
         torque = 5.0 * math.sin(t / 2.0)
         demand = 4.0 * math.sin(t / 2.0 + 0.5)

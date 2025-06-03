@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Dash web dashboard for Simulink UDP stream.
+"""Dash web dashboard for a Simulink TCP stream.
 
 Features implemented:
 1. Toggle four control signals via buttons, sending a 4‑float packet.
@@ -57,7 +57,7 @@ HISTORY = 1000  # currently unused
 # Throttle SSE updates to roughly the incoming sample rate
 UPDATE_MS = 10
 N_WINDOW_SEC = 10  # how many seconds of data to show in plots
-SAMPLE_RATE_HZ = 100  # expected UDP sample rate
+SAMPLE_RATE_HZ = 100  # expected sample rate from Simulink
 
 # Queue for server-sent events (SSE) to push fresh samples to the browser.
 # Only a single sample is stored; the browser keeps its own circular buffer.
@@ -131,9 +131,10 @@ def send_control_packet(
 ) -> None:
     """Send a 4-float packet containing the four control signals."""
     payload = struct.pack(CONTROL_FMT, zero, motor, assist, k_val)
-    host = cfg["udp"]["send_host"]
-    port = cfg["udp"]["send_port"]
+    host = cfg["tcp"]["host"]
+    port = cfg["tcp"]["port"]
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         try:
             sock.connect((host, port))
             sock.sendall(payload)
@@ -149,8 +150,8 @@ def start_tcp_client(cfg: Dict[str, Any]) -> None:
     fmt = cfg["packet"]["format"]
     expected = struct.calcsize(fmt)
     mapping = cfg["signals"]
-    host = cfg["udp"]["send_host"]
-    port = cfg["udp"]["send_port"]
+    host = cfg["tcp"]["host"]
+    port = cfg["tcp"]["port"]
 
     print(f"Connecting to TCP server {host}:{port}")
 
@@ -161,6 +162,7 @@ def start_tcp_client(cfg: Dict[str, Any]) -> None:
     while True:
         try:
             with socket.create_connection((host, port)) as sock:
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
                 sock.settimeout(1.0)
                 buffer = b""
                 while True:
@@ -664,7 +666,7 @@ def build_dash_app(cfg: Dict[str, Any]) -> dash.Dash:
         ) -> str:
         # Print the current state of the control buttons for debugging. This
         # helps verify that the dashboard is sending the expected values over
-        # UDP whenever a button is toggled.
+        # TCP whenever a button is toggled.
         print(
             "Control states -- zero: {0}, motor: {1}, assist: {2}, k: {3}".format(
                 zero_state, motor_state, assist_state, k_state
@@ -914,7 +916,7 @@ if __name__ == "__main__":
     # Determine whether the Simulink host is reachable. If not, fall back to
     # the fake data generator and serve the dashboard on localhost so the user
     # can run everything offline.
-    simulink_ok = is_host_reachable(cfg["udp"]["send_host"])
+    simulink_ok = is_host_reachable(cfg["tcp"]["host"])
     target_fn = start_tcp_client if simulink_ok else start_fake_data
 
     listener_t = threading.Thread(

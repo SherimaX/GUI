@@ -1,16 +1,12 @@
-# UDP connection parameters
-udp:
-  # IP address to bind the UDP listener ("0.0.0.0" means all interfaces)
-  listen_host: "0.0.0.0"
-  listen_port: 5431  # incoming data from Simulink
-
-  # Where to send outbound control packets (Simulink UDP Receive block)
-  send_host: "192.168.7.5"
-  send_port: 5431
+# TCP connection parameters
+tcp:
+  # Where the Simulink TCP Server is running
+  host: "192.168.7.5"
+  port: 5431
 
 # Packet definition
 packet:
-  # struct-format string describing the binary layout of a single UDP datagram.
+  # struct-format string describing the binary layout of a single TCP packet.
   # Below: 28 little-endian 32-bit floats (28 × 4 bytes = 112 bytes). Change to "<d" if you use doubles.
   format: "<30f"
 

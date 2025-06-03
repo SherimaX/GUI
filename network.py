@@ -5,9 +5,13 @@ import math
 from typing import Dict, Any
 from queue import Full
 
-from constants import CONTROL_FMT, SAMPLE_RATE_HZ
+from constants import CONTROL_FMT, SAMPLE_RATE_HZ, UPDATE_MS
 from state import event_q
 from utils import decode_packet
+
+# minimum interval between control packets in seconds
+_MIN_CTRL_INTERVAL = UPDATE_MS / 1000.0
+_last_ctrl_ts = 0.0
 
 
 def send_control_packet(
@@ -18,6 +22,13 @@ def send_control_packet(
     k_val: float = 0.0,
 ) -> None:
     """Send a 4-float packet containing the four control signals."""
+    global _last_ctrl_ts
+
+    now = time.monotonic()
+    if now - _last_ctrl_ts < _MIN_CTRL_INTERVAL:
+        return
+    _last_ctrl_ts = now
+
     payload = struct.pack(CONTROL_FMT, zero, motor, assist, k_val)
     host = cfg["tcp"]["host"]
     port = cfg["tcp"]["port"]

@@ -39,28 +39,39 @@ def send_control_packet(
     _last_ctrl_ts = now
 
     payload = struct.pack(CONTROL_FMT, zero, motor, assist, k_val)
-    host = cfg["tcp"]["host"]
-    port = cfg["tcp"]["port"]
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+    host = cfg["udp"]["send_host"]
+    port = cfg["udp"]["send_port"]
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         try:
-            sock.connect((host, port))
-            sock.sendall(payload)
+            sock.sendto(payload, (host, port))
         except Exception:
             pass
 
 
-def start_tcp_client(cfg: Dict[str, Any], stop_event: threading.Event | None = None) -> None:
-    """Listen to the TCP stream and push decoded packets to ``event_q``."""
+def start_udp_listener(
+    cfg: Dict[str, Any],
+    stop_event: threading.Event | None = None,
+) -> None:
+    """Listen to the UDP stream and push decoded packets to ``event_q``."""
     if stop_event is None:
         stop_event = _stop_event
     fmt = cfg["packet"]["format"]
     expected = struct.calcsize(fmt)
     mapping = cfg["signals"]
-    host = cfg["tcp"]["host"]
-    port = cfg["tcp"]["port"]
+    host = cfg["udp"]["listen_host"]
+    port = cfg["udp"]["listen_port"]
 
-    print(f"Connecting to TCP server {host}:{port}")
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    if hasattr(socket, "SO_REUSEPORT"):
+        try:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        except OSError:
+            pass
+    sock.bind((host, port))
+    sock.settimeout(1.0)
+
+    print(f"Listening for data on {host}:{port}")
 
     prev_t: float | None = None
     avg_dt: float = 0.0
@@ -68,62 +79,48 @@ def start_tcp_client(cfg: Dict[str, Any], stop_event: threading.Event | None = N
 
     while not stop_event.is_set():
         try:
-            with socket.create_connection((host, port)) as sock:
-                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-                sock.settimeout(1.0)
-                buffer = b""
-                while not stop_event.is_set():
-                    try:
-                        chunk = sock.recv(expected - len(buffer))
-                        if not chunk:
-                            raise ConnectionResetError
-                        buffer += chunk
-                        if len(buffer) < expected:
-                            continue
-                        data = buffer[:expected]
-                        buffer = buffer[expected:]
-                    except socket.timeout:
-                        continue
+            data, _ = sock.recvfrom(expected)
+        except socket.timeout:
+            continue
+        if len(data) != expected:
+            continue
 
-                    decoded = decode_packet(data, fmt, mapping)
-                    decoded["timestamp"] = time.time()
-                    sim_t = decoded.get("time", decoded.get("Time", 0.0))
-                    ankle = decoded.get("ankle_angle", 0.0)
-                    torque = decoded.get("actual_torque", 0.0)
-                    demand = decoded.get("demand_torque", 0.0)
-                    gait = decoded.get("gait_percentage", 0.0)
+        decoded = decode_packet(data, fmt, mapping)
+        decoded["timestamp"] = time.time()
+        sim_t = decoded.get("time", decoded.get("Time", 0.0))
+        ankle = decoded.get("ankle_angle", 0.0)
+        torque = decoded.get("actual_torque", 0.0)
+        demand = decoded.get("demand_torque", 0.0)
+        gait = decoded.get("gait_percentage", 0.0)
 
-                    if prev_t is not None:
-                        dt = sim_t - prev_t
-                        avg_dt = (avg_dt * count + dt) / (count + 1)
-                        count += 1
-                    prev_t = sim_t
+        if prev_t is not None:
+            dt = sim_t - prev_t
+            avg_dt = (avg_dt * count + dt) / (count + 1)
+            count += 1
+        prev_t = sim_t
 
-                    sample = {
-                        "t": sim_t,
-                        "ankle": ankle,
-                        "torque": torque,
-                        "demand_torque": demand,
-                        "gait": gait,
-                        "press": [decoded.get(f"pressure_{i}", 0.0) for i in range(1, 9)],
-                        "imu": [decoded.get(f"imu_{i}", 0.0) for i in range(1, 13)],
-                        "statusword": decoded.get("statusword", 0.0),
-                        "avg_dt": avg_dt,
-                    }
-                    try:
-                        event_q.put_nowait(sample)
-                    except Full:
-                        try:
-                            event_q.get_nowait()
-                        except Exception:
-                            pass
-                        try:
-                            event_q.put_nowait(sample)
-                        except Exception:
-                            pass
-        except Exception:
-            if not stop_event.is_set():
-                time.sleep(1.0)
+        sample = {
+            "t": sim_t,
+            "ankle": ankle,
+            "torque": torque,
+            "demand_torque": demand,
+            "gait": gait,
+            "press": [decoded.get(f"pressure_{i}", 0.0) for i in range(1, 9)],
+            "imu": [decoded.get(f"imu_{i}", 0.0) for i in range(1, 13)],
+            "statusword": decoded.get("statusword", 0.0),
+            "avg_dt": avg_dt,
+        }
+        try:
+            event_q.put_nowait(sample)
+        except Full:
+            try:
+                event_q.get_nowait()
+            except Exception:
+                pass
+            try:
+                event_q.put_nowait(sample)
+            except Exception:
+                pass
 
 
 def start_fake_data(cfg: Dict[str, Any], stop_event: threading.Event | None = None) -> None:

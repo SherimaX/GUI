@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-One-shot TCP sender to test Simulink control signals.
+One-shot UDP sender to test Simulink control signals.
 
 This script packs four single-precision floats—`zero_signal`, `motor_signal`,
 `assistance_signal`, and `fixed_k_signal`—into a 16-byte payload and sends it
-once to the IP/port defined under `tcp.host` / `tcp.port` in
+once to the IP/port defined under `udp.send_host` / `udp.send_port` in
 `config.yaml` (default: 192.168.7.5:5431).
 
 Run with custom values:
@@ -32,16 +32,16 @@ def load_config(path: str = CONFIG_FILE) -> Dict[str, Any]:
 
 
 async def send_packet(payload: bytes, host: str, port: int) -> None:
-    """Send *payload* to *(host, port)* via TCP and close the connection."""
-    reader, writer = await asyncio.open_connection(host, port)
-    sock = writer.get_extra_info("socket")
-    if sock is not None:
-        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+    """Send *payload* to *(host, port)* via UDP once and close the socket."""
+    loop = asyncio.get_running_loop()
+    transport, _ = await loop.create_datagram_endpoint(
+        asyncio.DatagramProtocol,
+        remote_addr=(host, port),
+    )
     logging.info("Sending %d bytes to %s:%d", len(payload), host, port)
-    writer.write(payload)
-    await writer.drain()
-    writer.close()
-    await writer.wait_closed()
+    transport.sendto(payload)
+    await asyncio.sleep(0.05)
+    transport.close()
 
 
 def build_payload(args) -> bytes:
@@ -64,7 +64,7 @@ async def main_async() -> None:
     args = parse_args()
     payload = build_payload(args)
 
-    await send_packet(payload, cfg["tcp"]["host"], cfg["tcp"]["port"])
+    await send_packet(payload, cfg["udp"]["send_host"], cfg["udp"]["send_port"])
     logging.info("Done.")
 
 

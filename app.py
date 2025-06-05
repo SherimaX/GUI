@@ -2,15 +2,15 @@ from threading import Thread, Event
 import signal
 
 from utils import load_config, is_host_reachable
-from network import start_tcp_client, start_fake_data, request_shutdown
+from network import start_udp_listener, start_fake_data, request_shutdown
 from dash_app import build_dash_app
 
 
 if __name__ == "__main__":
     cfg = load_config()
 
-    simulink_ok = is_host_reachable(cfg["tcp"]["host"])
-    target_fn = start_tcp_client if simulink_ok else start_fake_data
+    simulink_ok = is_host_reachable(cfg["udp"]["send_host"])
+    target_fn = start_udp_listener if simulink_ok else start_fake_data
 
     stop_event = Event()
 

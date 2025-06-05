@@ -1,6 +1,6 @@
-# Simulink TCP Web GUI
+# Simulink UDP Web GUI
 
-A lightweight, real-time dashboard built with Python that communicates with MATLAB/Simulink over TCP. The application streams live data coming from Simulink, visualises it in plots and numeric indicators, and allows you to send control commands back over the same TCP connection.
+A lightweight, real-time dashboard built with Python that communicates with MATLAB/Simulink over UDP. The application streams live data coming from Simulink, visualises it in plots and numeric indicators, and allows you to send control commands back to Simulink through the same UDP channel.
 
 ---
 
@@ -11,7 +11,7 @@ A lightweight, real-time dashboard built with Python that communicates with MATL
 | **Web framework** | **Dash** (`plotly-dash`) | Pure-Python, minimal boilerplate, works in the browser, supports live updating via callbacks, integrates Plotly charts out of the box. |
 | **UI components** | `dash-bootstrap-components`, `dash-daq` | Off-the-shelf widgets for buttons, toggles, numeric LEDs, gauges, etc., plus Bootstrap styling for responsive layout. |
 | **Realtime plotting** | `plotly` (comes with Dash) | High-performance WebGL rendering for streaming data. |
-| **Networking** | Python standard library `asyncio` + `socket` | Non-blocking TCP client implementation without extra dependencies. |
+| **Networking** | Python standard library `asyncio` + `socket` | Non-blocking UDP client/server implementation without extra dependencies. |
 | **Data handling** | Python built-ins (`collections`) | Fast buffering, filtering, and transformation of numeric data before visualisation. |
 | **Packaging / runtime** | `uvicorn` (optional) or the built-in Dash dev server | Easy local development; `uvicorn` or `gunicorn` can be used for production deployment. |
 
@@ -32,7 +32,7 @@ dash-bootstrap-components~=1.5  # nicer layout & styling
 dash-daq~=0.5  # gauges, numeric LEDs, etc.
 
 
-# async TCP networking (built-in)
+# async UDP networking (built-in)
 asyncio  # part of the Python stdlib, no install needed
 
 # production (optional)
@@ -52,9 +52,9 @@ pip install -r requirements.txt
 ## 3. High-level architecture
 
 ```
-┌─────────────────────┐     TCP     ┌──────────────────────┐
+┌─────────────────────┐     UDP     ┌──────────────────────┐
 │  Simulink model     │◁──────────▷│  Python Dashboard     │
-│   (TCP Server)      │           │  (Dash + asyncio)     │
+│  (UDP Send/Receive) │           │  (Dash + asyncio)     │
 └─────────────────────┘           └──────────────────────┘
                                          ▲
                                          │ Dash callbacks update the DOM
@@ -64,10 +64,10 @@ pip install -r requirements.txt
                              └──────────────────────────┘
 ```
 
-* **asyncio task**: Connects to a configurable TCP server, parses incoming bytes into numeric arrays, and stores them in a thread-safe queue.
+* **asyncio task**: Listens on a configurable UDP port, parses incoming bytes into numeric arrays, and stores them in a thread-safe queue.
 * **Dash callback**: Polls the queue on a fixed interval (e.g. every 100 ms) and pushes the latest data to Plotly graphs and numeric readouts.
 * **Sample rate**: The dashboard expects incoming packets at roughly 100&nbsp;Hz. Adjust the `SAMPLE_RATE_HZ` constant in `app.py` if your model uses a different rate.
-* **Control panel**: UI widgets trigger another callback that sends TCP packets back to Simulink to adjust parameters or setpoint values.
+* **Control panel**: UI widgets trigger another callback that sends UDP packets back to Simulink to adjust parameters or setpoint values.
 
 ---
 
@@ -75,8 +75,8 @@ pip install -r requirements.txt
 
 1. Clone or copy this repo.
 2. Create a virtual environment and install dependencies (see above).
-3. Add your Simulink model with a TCP Server block configured to the same IP/port.
-4. Implement `tcp_client.py` (receives data) and `tcp_sender.py` (optional, sends data).
+3. Add your Simulink model with *UDP Send*/*Receive* blocks configured to the same IP/port.
+4. Implement `udp_client.py` (receives data) and `udp_server.py` (optional, sends data).
 5. Build your Dash layout in `app.py` with:
    - `dcc.Graph` components for plots
    - `dash_daq.LEDDisplay` or `html.Div` for numeric values
@@ -98,11 +98,11 @@ pip install -r requirements.txt
 
 With the stack agreed, we can proceed in the following order:
 
-1. **Set up the project skeleton**: folders `src/`, `app.py`, and the TCP helper modules.
-2. **Implement TCP client**: Non-blocking listener storing data in an asyncio queue.
+1. **Set up the project skeleton**: folders `src/`, `app.py`, and the UDP helper modules.
+2. **Implement UDP receiver**: Non-blocking listener storing data in an asyncio queue.
 3. **Create initial Dash layout**: Static layout with placeholder plots and readouts.
 4. **Wire up live updates**: Interval callback fetching data and updating the UI.
-5. **Add control widgets**: Buttons/sliders linked to a TCP sender.
+5. **Add control widgets**: Buttons/sliders linked to a UDP sender.
 6. **Polish UI & deploy**: Styling, error handling, and optional packaging via Docker.
 
 Ready when you are to move on to step 2 (creating the project skeleton). 
